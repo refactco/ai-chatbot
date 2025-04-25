@@ -10,7 +10,6 @@ import { fetcher, generateUUID } from '@/lib/utils';
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
-import type { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { toast } from 'sonner';
 import { unstable_serialize } from 'swr/infinite';
@@ -20,13 +19,11 @@ export function Chat({
   id,
   initialMessages,
   selectedChatModel,
-  selectedVisibilityType,
   isReadonly,
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel: string;
-  selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
   const { mutate } = useSWRConfig();
@@ -70,7 +67,6 @@ export function Chat({
         <ChatHeader
           chatId={id}
           selectedModelId={selectedChatModel}
-          selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
         />
 
