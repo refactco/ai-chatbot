@@ -7,12 +7,25 @@ import Script from 'next/script';
 
 export const experimental_ppr = true;
 
+// Mock user session for authentication bypass
+const mockSession = {
+  user: {
+    id: 'admin',
+    email: 'admin@admin.com',
+    name: 'Admin'
+  },
+  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString() // 7 days from now
+};
+
 export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
+  // Use mock session instead of real auth
+  // const [session, cookieStore] = await Promise.all([auth(), cookies()]);
+  const cookieStore = await cookies();
+  const session = mockSession;
   const isCollapsed = cookieStore.get('sidebar:state')?.value !== 'true';
 
   return (

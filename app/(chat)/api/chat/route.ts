@@ -28,6 +28,15 @@ import { myProvider } from '@/lib/ai/providers';
 
 export const maxDuration = 60;
 
+// Mock user session for authentication bypass
+const mockSession = {
+  user: {
+    id: 'admin',
+    email: 'admin@admin.com'
+  },
+  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString() // 7 days from now
+};
+
 export async function POST(request: Request) {
   try {
     const {
@@ -40,11 +49,14 @@ export async function POST(request: Request) {
       selectedChatModel: string;
     } = await request.json();
 
-    const session = await auth();
+    // Use mock session instead of real auth
+    // const session = await auth();
+    const session = mockSession;
 
-    if (!session?.user?.id) {
-      return new Response('Unauthorized', { status: 401 });
-    }
+    // Comment out auth check
+    // if (!session?.user?.id) {
+    //   return new Response('Unauthorized', { status: 401 });
+    // }
 
     const userMessage = getMostRecentUserMessage(messages);
 
@@ -61,9 +73,10 @@ export async function POST(request: Request) {
 
       await saveChat({ id, userId: session.user.id, title });
     } else {
-      if (chat.userId !== session.user.id) {
-        return new Response('Forbidden', { status: 403 });
-      }
+      // Comment out user check for existing chats
+      // if (chat.userId !== session.user.id) {
+      //   return new Response('Forbidden', { status: 403 });
+      // }
     }
 
     await saveMessages({
@@ -173,18 +186,22 @@ export async function DELETE(request: Request) {
     return new Response('Not Found', { status: 404 });
   }
 
-  const session = await auth();
+  // Use mock session instead of real auth
+  // const session = await auth();
+  const session = mockSession;
 
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Comment out auth check
+  // if (!session?.user?.id) {
+  //   return new Response('Unauthorized', { status: 401 });
+  // }
 
   try {
     const chat = await getChatById({ id });
 
-    if (chat.userId !== session.user.id) {
-      return new Response('Forbidden', { status: 403 });
-    }
+    // Comment out user check for existing chats
+    // if (chat.userId !== session.user.id) {
+    //   return new Response('Forbidden', { status: 403 });
+    // }
 
     const deletedChat = await deleteChatById({ id });
 

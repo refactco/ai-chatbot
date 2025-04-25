@@ -13,6 +13,25 @@ import { login, type LoginActionState } from '../actions';
 export default function Page() {
   const router = useRouter();
 
+  // Automatically redirect to home page (bypassing authentication)
+  useEffect(() => {
+    router.push('/');
+  }, [router]);
+
+  // Return a loading state while redirecting
+  return (
+    <div className="flex h-dvh w-screen items-center justify-center bg-background">
+      <div className="text-center">
+        <h3 className="text-xl font-semibold dark:text-zinc-50">Redirecting...</h3>
+        <p className="text-sm text-gray-500 dark:text-zinc-400">
+          Taking you to the app...
+        </p>
+      </div>
+    </div>
+  );
+
+  // Original code below (commented out)
+  /*
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
 
@@ -70,4 +89,5 @@ export default function Page() {
       </div>
     </div>
   );
+  */
 }

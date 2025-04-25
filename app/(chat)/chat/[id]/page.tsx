@@ -9,6 +9,16 @@ import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { DBMessage } from '@/lib/db/schema';
 import { Attachment, UIMessage } from 'ai';
 
+// Mock user session for authentication bypass
+const mockSession = {
+  user: {
+    id: 'admin',
+    email: 'admin@admin.com',
+    name: 'Admin'
+  },
+  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString() // 7 days from now
+};
+
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;
@@ -18,17 +28,20 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     notFound();
   }
 
-  const session = await auth();
+  // Use mock session instead of real auth
+  // const session = await auth();
+  const session = mockSession;
 
-  if (chat.visibility === 'private') {
-    if (!session || !session.user) {
-      return notFound();
-    }
+  // Disable visibility checks
+  // if (chat.visibility === 'private') {
+  //   if (!session || !session.user) {
+  //     return notFound();
+  //   }
 
-    if (session.user.id !== chat.userId) {
-      return notFound();
-    }
-  }
+  //   if (session.user.id !== chat.userId) {
+  //     return notFound();
+  //   }
+  // }
 
   const messagesFromDb = await getMessagesByChatId({
     id,
@@ -58,7 +71,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           initialMessages={convertToUIMessages(messagesFromDb)}
           selectedChatModel={DEFAULT_CHAT_MODEL}
           selectedVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
+          isReadonly={false} // Always set readonly to false
         />
         <DataStreamHandler id={id} />
       </>
@@ -72,7 +85,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         initialMessages={convertToUIMessages(messagesFromDb)}
         selectedChatModel={chatModelFromCookie.value}
         selectedVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
+        isReadonly={false} // Always set readonly to false
       />
       <DataStreamHandler id={id} />
     </>

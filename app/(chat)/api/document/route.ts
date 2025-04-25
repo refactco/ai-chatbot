@@ -6,6 +6,16 @@ import {
   saveDocument,
 } from '@/lib/db/queries';
 
+// Mock user session for authentication bypass
+const mockSession = {
+  user: {
+    id: 'admin',
+    email: 'admin@admin.com',
+    name: 'Admin'
+  },
+  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString() // 7 days from now
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
@@ -14,11 +24,14 @@ export async function GET(request: Request) {
     return new Response('Missing id', { status: 400 });
   }
 
-  const session = await auth();
+  // Use mock session instead of real auth
+  // const session = await auth();
+  const session = mockSession;
 
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Comment out auth check - we always have a session now
+  // if (!session?.user?.id) {
+  //   return new Response('Unauthorized', { status: 401 });
+  // }
 
   const documents = await getDocumentsById({ id });
 
@@ -28,9 +41,10 @@ export async function GET(request: Request) {
     return new Response('Not found', { status: 404 });
   }
 
-  if (document.userId !== session.user.id) {
-    return new Response('Forbidden', { status: 403 });
-  }
+  // Comment out user check - allow access to all documents
+  // if (document.userId !== session.user.id) {
+  //   return new Response('Forbidden', { status: 403 });
+  // }
 
   return Response.json(documents, { status: 200 });
 }
@@ -43,11 +57,14 @@ export async function POST(request: Request) {
     return new Response('Missing id', { status: 400 });
   }
 
-  const session = await auth();
+  // Use mock session instead of real auth
+  // const session = await auth();
+  const session = mockSession;
 
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Comment out auth check - we always have a session now
+  // if (!session?.user?.id) {
+  //   return new Response('Unauthorized', { status: 401 });
+  // }
 
   const {
     content,
@@ -61,9 +78,10 @@ export async function POST(request: Request) {
   if (documents.length > 0) {
     const [document] = documents;
 
-    if (document.userId !== session.user.id) {
-      return new Response('Forbidden', { status: 403 });
-    }
+    // Comment out user check - allow access to all documents
+    // if (document.userId !== session.user.id) {
+    //   return new Response('Forbidden', { status: 403 });
+    // }
   }
 
   const document = await saveDocument({
@@ -90,19 +108,23 @@ export async function DELETE(request: Request) {
     return new Response('Missing timestamp', { status: 400 });
   }
 
-  const session = await auth();
+  // Use mock session instead of real auth
+  // const session = await auth();
+  const session = mockSession;
 
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Comment out auth check - we always have a session now
+  // if (!session?.user?.id) {
+  //   return new Response('Unauthorized', { status: 401 });
+  // }
 
   const documents = await getDocumentsById({ id });
 
   const [document] = documents;
 
-  if (document.userId !== session.user.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Comment out user check - allow access to all documents
+  // if (document.userId !== session.user.id) {
+  //   return new Response('Unauthorized', { status: 401 });
+  // }
 
   const documentsDeleted = await deleteDocumentsByIdAfterTimestamp({
     id,
