@@ -11,6 +11,9 @@ interface ExtendedSession extends Session {
   user: User;
 }
 
+// Use this secret in development mode to avoid the MissingSecret error
+const DEV_SECRET = 'development-secret-key-not-for-production';
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -18,10 +21,22 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET || DEV_SECRET,
   providers: [
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
+        // For MSW mode in development, allow a mock user
+        if (process.env.NODE_ENV === 'development' && 
+            email === 'user@example.com' && 
+            password === 'password') {
+          return {
+            id: '1',
+            email: 'user@example.com',
+            name: 'Test User'
+          };
+        }
+        
         const users = await getUser(email);
 
         if (users.length === 0) {
