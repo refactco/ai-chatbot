@@ -19,6 +19,25 @@ AI Chatbot is a Next.js application that demonstrates modern application develop
   - Modern authentication with Next.js App Router integration
   - Email & password authentication
 
+## Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+- [Project Overview](./docs/overview.md) - Purpose, goals, and high-level architecture
+- [Architecture](./docs/architecture.md) - Detailed system architecture and design patterns
+- [Directory Structure](./docs/directory-structure.md) - Overview of project structure
+- [Components](./docs/components.md) - UI component documentation
+- [Pages](./docs/pages.md) - Application pages and their functionality
+- [Services](./docs/services.md) - Backend services and API routes
+- [Core Logic](./docs/core-logic.md) - Business logic and data flow
+- [Data Models](./docs/data-models.md) - Database schema and data relationships
+- [Functions](./docs/functions.md) - Key functions and utilities
+- [Configuration](./docs/configuration.md) - Configuration settings and environment variables
+- [Setup & Deployment](./docs/setup.md) - How to set up and deploy the application
+- [Testing](./docs/testing.md) - Testing strategy and tools
+- [Contributing](./docs/contributing.md) - Guidelines for contributing to the project
+- [Troubleshooting](./docs/troubleshooting.md) - Common issues and their solutions
+
 ## Development Mode with Mock Service Worker
 
 The application uses Mock Service Worker (MSW) to intercept API calls during development. This makes development faster and removes dependency on external services.
@@ -61,6 +80,8 @@ The mock implementation is located in:
 
 ## Running Locally
 
+See the [Setup & Deployment](./docs/setup.md) documentation for detailed instructions.
+
 ```bash
 # Install dependencies
 npm install
@@ -87,4 +108,8 @@ AUTH_SECRET=your-secret-key
 NEXT_PUBLIC_USE_MSW=true
 ```
 
-For production, you will need to add proper database connection strings and other configuration.
+For production configuration, see the [Configuration](./docs/configuration.md) documentation.
+
+## Contributing
+
+Contributions are welcome! Please see the [Contributing Guidelines](./docs/contributing.md) for more information.
