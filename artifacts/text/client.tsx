@@ -10,9 +10,9 @@ import {
   RedoIcon,
   UndoIcon,
 } from '@/components/icons';
-import { Suggestion } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
+import type { Suggestion } from '@/lib/schema';
 
 interface TextArtifactMetadata {
   suggestions: Array<Suggestion>;
@@ -34,7 +34,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
         return {
           suggestions: [
             ...metadata.suggestions,
-            streamPart.content as Suggestion,
+            streamPart.content as unknown as Suggestion,
           ],
         };
       });
@@ -90,9 +90,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
             onSaveContent={onSaveContent}
           />
 
-          {metadata &&
-          metadata.suggestions &&
-          metadata.suggestions.length > 0 ? (
+          {metadata?.suggestions?.length > 0 ? (
             <div className="md:hidden h-dvh w-12 shrink-0" />
           ) : null}
         </div>

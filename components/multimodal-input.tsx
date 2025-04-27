@@ -1,6 +1,6 @@
 'use client';
 
-import type { Attachment, UIMessage } from 'ai';
+import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/ai/types';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -22,7 +22,16 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
-import type { UseChatHelpers } from '@ai-sdk/react';
+
+// Helper function to read file as data URL
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 function PureMultimodalInput({
   chatId,
@@ -127,29 +136,20 @@ function PureMultimodalInput({
   ]);
 
   const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // In this mock implementation, we're just returning a fake URL
+      // In a real implementation, you would upload the file to a server
+      console.log('Uploading file:', file.name);
 
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
-      }
-      const { error } = await response.json();
-      toast.error(error);
+      return {
+        type: 'file', // Add the required type property
+        url: URL.createObjectURL(file),
+        name: file.name,
+        content: await readFileAsDataURL(file),
+      } as Attachment;
     } catch (error) {
-      toast.error('Failed to upload file, please try again!');
+      console.error('Error uploading file:', error);
+      return undefined;
     }
   };
 
@@ -209,9 +209,10 @@ function PureMultimodalInput({
             <PreviewAttachment
               key={filename}
               attachment={{
+                type: 'file',
                 url: '',
                 name: filename,
-                contentType: '',
+                content: '',
               }}
               isUploading={true}
             />

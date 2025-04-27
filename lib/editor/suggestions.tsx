@@ -8,8 +8,8 @@ import {
 import { createRoot } from 'react-dom/client';
 
 import { Suggestion as PreviewSuggestion } from '@/components/suggestion';
-import type { Suggestion } from '@/lib/db/schema';
-import { ArtifactKind } from '@/components/artifact';
+import type { Suggestion } from '@/lib/schema';
+import type { ArtifactKind } from '@/components/artifact';
 
 export interface UISuggestion extends Suggestion {
   selectionStart: number;

@@ -10,10 +10,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
+
+// Local chat models - simplified since we don't connect to real AI services
+const chatModels = [
+  {
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5',
+    description: 'Fast and efficient for most tasks',
+  },
+  {
+    id: 'gpt-4',
+    name: 'GPT-4',
+    description: 'Advanced capabilities for complex tasks',
+  },
+  {
+    id: 'claude-3',
+    name: 'Claude 3',
+    description: "Anthropic's latest model with improved reasoning",
+  },
+];
 
 export function ModelSelector({
   selectedModelId,

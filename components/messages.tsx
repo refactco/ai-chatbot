@@ -1,16 +1,13 @@
-import type { UIMessage } from 'ai';
+import type { UIMessage, UseChatHelpers } from '@/lib/ai/types';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Greeting } from './greeting';
 import { memo } from 'react';
-import type { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
-import type { UseChatHelpers } from '@ai-sdk/react';
 
 interface MessagesProps {
   chatId: string;
   status: UseChatHelpers['status'];
-  votes: Array<Vote> | undefined;
   messages: Array<UIMessage>;
   setMessages: UseChatHelpers['setMessages'];
   reload: UseChatHelpers['reload'];
@@ -21,12 +18,16 @@ interface MessagesProps {
 function PureMessages({
   chatId,
   status,
-  votes,
   messages,
   setMessages,
   reload,
   isReadonly,
 }: MessagesProps) {
+  // Type assertion to help TypeScript understand the compatibility
+  const compatibleMessages = messages as any;
+  const compatibleSetMessages = setMessages as any;
+  const compatibleReload = reload as any;
+
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
@@ -35,28 +36,27 @@ function PureMessages({
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
     >
-      {messages.length === 0 && <Greeting />}
+      {compatibleMessages.length === 0 && <Greeting />}
 
-      {messages.map((message, index) => (
+      {compatibleMessages.map((message: any, index: number) => (
         <PreviewMessage
           key={message.id}
           chatId={chatId}
           message={message}
-          isLoading={status === 'streaming' && messages.length - 1 === index}
-          vote={
-            votes
-              ? votes.find((vote) => vote.messageId === message.id)
-              : undefined
+          isLoading={
+            status === 'streaming' && compatibleMessages.length - 1 === index
           }
-          setMessages={setMessages}
-          reload={reload}
+          setMessages={compatibleSetMessages}
+          reload={compatibleReload}
           isReadonly={isReadonly}
         />
       ))}
 
       {status === 'submitted' &&
-        messages.length > 0 &&
-        messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
+        compatibleMessages.length > 0 &&
+        compatibleMessages[compatibleMessages.length - 1].role === 'user' && (
+          <ThinkingMessage />
+        )}
 
       <div
         ref={messagesEndRef}
@@ -73,7 +73,6 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
   if (!equal(prevProps.messages, nextProps.messages)) return false;
-  if (!equal(prevProps.votes, nextProps.votes)) return false;
 
   return true;
 });

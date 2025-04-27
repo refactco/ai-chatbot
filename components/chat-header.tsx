@@ -1,23 +1,20 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowSize } from 'usehooks-ts';
+import { memo } from 'react';
 
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from './icons';
 import { useSidebar } from './ui/sidebar';
-import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 function PureChatHeader({
   chatId,
-  selectedModelId,
   isReadonly,
 }: {
   chatId: string;
-  selectedModelId: string;
   isReadonly: boolean;
 }) {
   const router = useRouter();
@@ -52,5 +49,8 @@ function PureChatHeader({
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId;
+  return (
+    prevProps.chatId === nextProps.chatId &&
+    prevProps.isReadonly === nextProps.isReadonly
+  );
 });

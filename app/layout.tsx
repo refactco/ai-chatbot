@@ -2,14 +2,11 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { MSWProvider } from './msw-provider';
-
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Next.js Chatbot Template',
-  description: 'Next.js chatbot template using the AI SDK.',
+  title: 'Static Demo - Next.js Chatbot Template',
+  description: 'A simplified static demo of the Next.js chatbot template.',
 };
 
 export const viewport = {
@@ -48,7 +45,7 @@ const THEME_COLOR_SCRIPT = `\
   updateThemeColor();
 })();`;
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -77,11 +74,8 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Wrap children with the MSW provider in development */}
-          <MSWProvider>
-            <Toaster position="top-center" />
-            {children}
-          </MSWProvider>
+          <Toaster position="top-center" />
+          {children}
         </ThemeProvider>
       </body>
     </html>

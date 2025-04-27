@@ -1,79 +1,69 @@
-import { cookies } from 'next/headers';
-import { notFound } from 'next/navigation';
+'use client';
 
-import { auth } from '@/app/(auth)/auth';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Chat } from '@/components/chat';
-import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
-import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
-import { DBMessage } from '@/lib/db/schema';
-import { Attachment, UIMessage } from 'ai';
+import type { Message } from '@/lib/schema';
+import type { UIMessage } from '@/lib/ai/types';
+import { apiService } from '@/lib/services/api-service';
 
 // Mock user session for authentication bypass
+// Note: This will be replaced with proper Google OAuth later
 const mockSession = {
   user: {
     id: 'admin',
     email: 'admin@admin.com',
-    name: 'Admin'
+    name: 'Admin',
   },
-  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString() // 7 days from now
+  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days from now
 };
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const { id } = params;
-  const chat = await getChatById({ id });
+export default function Page() {
+  const params = useParams();
+  const id = params.id as string;
 
-  if (!chat) {
-    notFound();
-  }
+  const [chat, setChat] = useState<any>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Use mock session instead of real auth
-  // const session = await auth();
-  const session = mockSession;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch chat and messages
+        const chatData = await apiService.chat.getChatById(id);
+        setChat(chatData.chat);
+        setMessages(chatData.messages);
+      } catch (error) {
+        console.error('Error fetching chat data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Disable visibility checks
-  // if (chat.visibility === 'private') {
-  //   if (!session || !session.user) {
-  //     return notFound();
-  //   }
+    fetchData();
+  }, [id]);
 
-  //   if (session.user.id !== chat.userId) {
-  //     return notFound();
-  //   }
-  // }
-
-  const messagesFromDb = await getMessagesByChatId({
-    id,
-  });
-
-  function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
+  function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
     return messages.map((message) => ({
       id: message.id,
-      parts: message.parts as UIMessage['parts'],
       role: message.role as UIMessage['role'],
-      // Note: content will soon be deprecated in @ai-sdk/react
-      content: '',
-      createdAt: message.createdAt,
-      experimental_attachments:
-        (message.attachments as Array<Attachment>) ?? [],
+      content: message.content,
+      createdAt: new Date(message.createdAt),
     }));
   }
 
-  const cookieStore = await cookies();
-  const chatModelFromCookie = cookieStore.get('chat-model');
-
-  if (!chatModelFromCookie) {
+  if (loading) {
     return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={convertToUIMessages(messagesFromDb)}
-          selectedChatModel={DEFAULT_CHAT_MODEL}
-          isReadonly={false} // Always set readonly to false
-        />
-        <DataStreamHandler id={id} />
-      </>
+      <div className="flex items-center justify-center h-full">Loading...</div>
+    );
+  }
+
+  if (!chat) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        Chat not found
+      </div>
     );
   }
 
@@ -81,8 +71,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     <>
       <Chat
         id={chat.id}
-        initialMessages={convertToUIMessages(messagesFromDb)}
-        selectedChatModel={chatModelFromCookie.value}
+        initialMessages={convertToUIMessages(messages)}
         isReadonly={false} // Always set readonly to false
       />
       <DataStreamHandler id={id} />

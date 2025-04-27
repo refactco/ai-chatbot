@@ -1,54 +1,87 @@
-'use server';
+'use client';
 
-import { generateText, Message } from 'ai';
-import { cookies } from 'next/headers';
+import type { Message } from '@/lib/services/api-service';
 
-import {
-  deleteMessagesByChatIdAfterTimestamp,
-  getMessageById,
-  updateChatVisiblityById,
-} from '@/lib/db/queries';
-import { VisibilityType } from '@/components/visibility-selector';
-import { myProvider } from '@/lib/ai/providers';
+// Type definition for visibility
+export type VisibilityType = 'private' | 'public' | 'unlisted';
 
-export async function saveChatModelAsCookie(model: string) {
-  const cookieStore = await cookies();
-  cookieStore.set('chat-model', model);
+// Save chat model preference to cookie
+export function saveChatModelAsCookie(model: string) {
+  if (typeof window === 'undefined') return;
+
+  // In a cookie-based implementation, we'd use document.cookie
+  // For simplicity, we'll use localStorage
+  localStorage.setItem('chat-model', model);
 }
 
-export async function generateTitleFromUserMessage({
+// Generate a title from a user message
+export function generateTitleFromUserMessage({
   message,
 }: {
   message: Message;
 }) {
-  const { text: title } = await generateText({
-    model: myProvider.languageModel('title-model'),
-    system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 80 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
-    prompt: JSON.stringify(message),
-  });
+  // Simple client-side implementation
+  // Extract first few words from the message content
+  const words = message.content.split(' ');
+  const titleWords = words.slice(0, 4);
 
-  return title;
+  // Add ellipsis if the message is longer
+  if (words.length > 4) {
+    titleWords.push('...');
+  }
+
+  return titleWords.join(' ');
 }
 
-export async function deleteTrailingMessages({ id }: { id: string }) {
-  const [message] = await getMessageById({ id });
+// Delete trailing messages
+export function deleteTrailingMessages({ id }: { id: string }) {
+  if (typeof window === 'undefined') return;
 
-  await deleteMessagesByChatIdAfterTimestamp({
-    chatId: message.chatId,
-    timestamp: message.createdAt,
-  });
+  // Get messages from localStorage
+  const messagesJson = localStorage.getItem('messages');
+  if (!messagesJson) return;
+
+  const messages: Message[] = JSON.parse(messagesJson);
+
+  // Find the target message
+  const messageIndex = messages.findIndex((m) => m.id === id);
+  if (messageIndex === -1) return;
+
+  const message = messages[messageIndex];
+
+  // Filter out messages that are in the same chat and created after the target message
+  const filteredMessages = messages.filter(
+    (m) =>
+      m.chatId !== message.chatId ||
+      new Date(m.createdAt).getTime() <= new Date(message.createdAt).getTime(),
+  );
+
+  // Save the filtered messages
+  localStorage.setItem('messages', JSON.stringify(filteredMessages));
 }
 
-export async function updateChatVisibility({
+// Update chat visibility
+export function updateChatVisibility({
   chatId,
   visibility,
 }: {
   chatId: string;
   visibility: VisibilityType;
 }) {
-  await updateChatVisiblityById({ chatId, visibility });
+  if (typeof window === 'undefined') return;
+
+  // Get chats from localStorage
+  const chatsJson = localStorage.getItem('chats');
+  if (!chatsJson) return;
+
+  const chats = JSON.parse(chatsJson);
+
+  // Find and update the target chat
+  const chatIndex = chats.findIndex((c: any) => c.id === chatId);
+  if (chatIndex === -1) return;
+
+  chats[chatIndex].visibility = visibility;
+
+  // Save the updated chats
+  localStorage.setItem('chats', JSON.stringify(chats));
 }

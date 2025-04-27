@@ -1,4 +1,4 @@
-import type { Attachment, UIMessage } from 'ai';
+import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/ai/types';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -11,7 +11,7 @@ import {
 } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
-import type { Document, Vote } from '@/lib/db/schema';
+import type { Document, Vote } from '@/lib/schema';
 import { fetcher } from '@/lib/utils';
 import { MultimodalInput } from './multimodal-input';
 import { Toolbar } from './toolbar';
@@ -22,18 +22,11 @@ import { ArtifactMessages } from './artifact-messages';
 import { useSidebar } from './ui/sidebar';
 import { useArtifact } from '@/hooks/use-artifact';
 import { imageArtifact } from '@/artifacts/image/client';
-import { codeArtifact } from '@/artifacts/code/client';
 import { sheetArtifact } from '@/artifacts/sheet/client';
 import { textArtifact } from '@/artifacts/text/client';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
 
-export const artifactDefinitions = [
-  textArtifact,
-  codeArtifact,
-  imageArtifact,
-  sheetArtifact,
-];
+export const artifactDefinitions = [textArtifact, imageArtifact, sheetArtifact];
 export type ArtifactKind = (typeof artifactDefinitions)[number]['kind'];
 
 export interface UIArtifact {
@@ -49,6 +42,22 @@ export interface UIArtifact {
     width: number;
     height: number;
   };
+}
+
+export interface ArtifactProps {
+  chatId: string;
+  input: string;
+  setInput: Dispatch<SetStateAction<string>>;
+  handleSubmit: any;
+  status: any;
+  stop: any;
+  attachments: any;
+  setAttachments: any;
+  append: any;
+  messages: any;
+  setMessages: any;
+  reload: any;
+  isReadonly: boolean;
 }
 
 function PureArtifact({
@@ -76,7 +85,7 @@ function PureArtifact({
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
   messages: Array<UIMessage>;
   setMessages: UseChatHelpers['setMessages'];
-  votes: Array<Vote> | undefined;
+  votes?: Array<Vote> | undefined;
   append: UseChatHelpers['append'];
   handleSubmit: UseChatHelpers['handleSubmit'];
   reload: UseChatHelpers['reload'];
@@ -251,6 +260,12 @@ function PureArtifact({
     }
   }, [artifact.documentId, artifactDefinition, setMetadata]);
 
+  // Type assertions to help TypeScript understand compatibility
+  const compatibleMessages = messages as any;
+  const compatibleSetMessages = setMessages as any;
+  const compatibleAppend = append as any;
+  const compatibleReload = reload as any;
+
   return (
     <AnimatePresence>
       {artifact.isVisible && (
@@ -313,10 +328,9 @@ function PureArtifact({
                 <ArtifactMessages
                   chatId={chatId}
                   status={status}
-                  votes={votes}
-                  messages={messages}
-                  setMessages={setMessages}
-                  reload={reload}
+                  messages={messages as any}
+                  setMessages={setMessages as any}
+                  reload={reload as any}
                   isReadonly={isReadonly}
                   artifactStatus={artifact.status}
                 />
@@ -472,10 +486,10 @@ function PureArtifact({
                   <Toolbar
                     isToolbarVisible={isToolbarVisible}
                     setIsToolbarVisible={setIsToolbarVisible}
-                    append={append}
                     status={status}
+                    append={compatibleAppend}
                     stop={stop}
-                    setMessages={setMessages}
+                    setMessages={compatibleSetMessages}
                     artifactKind={artifact.kind}
                   />
                 )}

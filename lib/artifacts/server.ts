@@ -1,12 +1,9 @@
-import { codeDocumentHandler } from '@/artifacts/code/server';
 import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
-import { ArtifactKind } from '@/components/artifact';
-import { DataStreamWriter } from 'ai';
-import { Document } from '../db/schema';
-import { saveDocument } from '../db/queries';
-import { Session } from 'next-auth';
+import type { ArtifactKind } from '@/components/artifact';
+import type { DataStreamWriter } from '@/lib/ai/types';
+import type { Document } from '../schema';
 
 export interface SaveDocumentProps {
   id: string;
@@ -16,17 +13,27 @@ export interface SaveDocumentProps {
   userId: string;
 }
 
+export interface Session {
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+    image?: string;
+  };
+  expires: string;
+}
+
 export interface CreateDocumentCallbackProps {
   id: string;
   title: string;
-  dataStream: DataStreamWriter;
+  dataStream: DataStreamWriter<any>;
   session: Session;
 }
 
 export interface UpdateDocumentCallbackProps {
   document: Document;
   description: string;
-  dataStream: DataStreamWriter;
+  dataStream: DataStreamWriter<any>;
   session: Session;
 }
 
@@ -34,6 +41,46 @@ export interface DocumentHandler<T = ArtifactKind> {
   kind: T;
   onCreateDocument: (args: CreateDocumentCallbackProps) => Promise<void>;
   onUpdateDocument: (args: UpdateDocumentCallbackProps) => Promise<void>;
+}
+
+// Client-side implementation to save document
+export async function saveDocument(props: SaveDocumentProps): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const { id, title, kind, content, userId } = props;
+
+  // Get existing documents from localStorage
+  const storedDocs = localStorage.getItem('documents');
+  const documents: Document[] = storedDocs ? JSON.parse(storedDocs) : [];
+
+  // Check if document already exists
+  const existingDocIndex = documents.findIndex((doc) => doc.id === id);
+
+  const now = new Date();
+
+  if (existingDocIndex >= 0) {
+    // Update existing document
+    documents[existingDocIndex] = {
+      ...documents[existingDocIndex],
+      title,
+      content,
+      updatedAt: now,
+    };
+  } else {
+    // Create new document
+    documents.push({
+      id,
+      userId,
+      title,
+      content,
+      kind,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  // Save to localStorage
+  localStorage.setItem('documents', JSON.stringify(documents));
 }
 
 export function createDocumentHandler<T extends ArtifactKind>(config: {
@@ -91,9 +138,8 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
  */
 export const documentHandlersByArtifactKind: Array<DocumentHandler> = [
   textDocumentHandler,
-  codeDocumentHandler,
   imageDocumentHandler,
   sheetDocumentHandler,
 ];
 
-export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
+export const artifactKinds = ['text', 'image', 'sheet'] as const;
