@@ -55,7 +55,7 @@ function PureMessages({
       {status === 'submitted' &&
         compatibleMessages.length > 0 &&
         compatibleMessages[compatibleMessages.length - 1].role === 'user' && (
-          <ThinkingMessage />
+          <ThinkingMessage key="thinking-message" />
         )}
 
       <div
