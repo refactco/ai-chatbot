@@ -1,4 +1,7 @@
-import { generateDummyPassword } from './db/utils';
+// Helper function to generate a dummy password for testing
+export const generateDummyPassword = () => {
+  return `dummy-password-${Math.random().toString(36).substring(2, 15)}`;
+};
 
 export const isProductionEnvironment = process.env.NODE_ENV === 'production';
 

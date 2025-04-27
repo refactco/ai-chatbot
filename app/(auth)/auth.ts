@@ -2,7 +2,9 @@ import { compare } from 'bcrypt-ts';
 import NextAuth, { type User, type Session } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
-import { getUser } from '@/lib/db/queries';
+import { findUserByEmail } from '@/lib/mockApi/authApi';
+import { mockStorage } from '@/lib/mockApi/utils';
+import { mockUsers } from '@/lib/mockApi/data';
 
 import { authConfig } from './auth.config';
 import { DUMMY_PASSWORD } from '@/lib/constants';
@@ -26,34 +28,37 @@ export const {
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
+        // Initialize mock storage if needed
+        if (!mockStorage.getItem('users')) {
+          mockStorage.setItem('users', mockUsers);
+        }
+
         // For MSW mode in development, allow a mock user
-        if (process.env.NODE_ENV === 'development' && 
-            email === 'user@example.com' && 
-            password === 'password') {
+        if (
+          process.env.NODE_ENV === 'development' &&
+          email === 'user@example.com' &&
+          password === 'password'
+        ) {
           return {
             id: '1',
             email: 'user@example.com',
-            name: 'Test User'
+            name: 'Test User',
           };
         }
-        
-        const users = await getUser(email);
 
-        if (users.length === 0) {
+        // Use mock API to find user
+        const user = findUserByEmail(email);
+
+        if (!user) {
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
 
-        const [user] = users;
-
-        if (!user.password) {
+        // In mock mode, all test users use "password" as password
+        if (password !== 'password') {
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
-
-        const passwordsMatch = await compare(password, user.password);
-
-        if (!passwordsMatch) return null;
 
         return user as any;
       },

@@ -2,7 +2,12 @@
 
 import { z } from 'zod';
 
-import { createUser, getUser } from '@/lib/db/queries';
+import {
+  findUserByEmail,
+  register as mockRegister,
+} from '@/lib/mockApi/authApi';
+import { mockStorage } from '@/lib/mockApi/utils';
+import { mockUsers } from '@/lib/mockApi/data';
 
 import { signIn } from './auth';
 
@@ -56,17 +61,31 @@ export const register = async (
   formData: FormData,
 ): Promise<RegisterActionState> => {
   try {
+    // Initialize mock storage if needed
+    if (!mockStorage.getItem('users')) {
+      mockStorage.setItem('users', mockUsers);
+    }
+
     const validatedData = authFormSchema.parse({
       email: formData.get('email'),
       password: formData.get('password'),
     });
 
-    const [user] = await getUser(validatedData.email);
+    const user = findUserByEmail(validatedData.email);
 
     if (user) {
       return { status: 'user_exists' } as RegisterActionState;
     }
-    await createUser(validatedData.email, validatedData.password);
+
+    // Register user in mock system
+    const name =
+      formData.get('name')?.toString() || validatedData.email.split('@')[0];
+    await mockRegister({
+      email: validatedData.email,
+      password: validatedData.password,
+      name,
+    });
+
     await signIn('credentials', {
       email: validatedData.email,
       password: validatedData.password,

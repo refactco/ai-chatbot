@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
-import { PencilEditIcon, SparklesIcon } from './icons';
+import { PencilEditIcon, SparklesIcon, UserIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 
 const PurePreviewMessage = ({
   chatId,
@@ -50,7 +50,7 @@ const PurePreviewMessage = ({
       >
         <div
           className={cn(
-            'flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
+            'flex gap-4 w-full group-data-[role=user]/message:max-w-2xl',
             {
               'w-full': mode === 'edit',
               'group-data-[role=user]/message:w-fit': mode !== 'edit',
@@ -61,6 +61,14 @@ const PurePreviewMessage = ({
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
                 <SparklesIcon size={14} />
+              </div>
+            </div>
+          )}
+
+          {message.role === 'user' && (
+            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+              <div className="translate-y-px">
+                <UserIcon size={14} />
               </div>
             </div>
           )}
@@ -98,6 +106,16 @@ const PurePreviewMessage = ({
                 if (mode === 'view') {
                   return (
                     <div key={key} className="flex flex-row gap-2 items-start">
+                      <div
+                        data-testid="message-content"
+                        className={cn('flex flex-col gap-4', {
+                          'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                            message.role === 'user',
+                        })}
+                      >
+                        <Markdown>{part.text}</Markdown>
+                      </div>
+
                       {message.role === 'user' && !isReadonly && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -115,16 +133,6 @@ const PurePreviewMessage = ({
                           <TooltipContent>Edit message</TooltipContent>
                         </Tooltip>
                       )}
-
-                      <div
-                        data-testid="message-content"
-                        className={cn('flex flex-col gap-4', {
-                          'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                            message.role === 'user',
-                        })}
-                      >
-                        <Markdown>{part.text}</Markdown>
-                      </div>
                     </div>
                   );
                 }

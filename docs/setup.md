@@ -10,17 +10,12 @@ Before you begin, ensure you have the following installed:
 
 - **Node.js**: v18.0.0 or higher
 - **PNPM**: v9.12.3 or higher (package manager)
-- **PostgreSQL**: v14 or higher
 
 ### Environment Variables
 
 Create a `.env.local` file in the root directory with the following variables:
 
 ```env
-# Database
-POSTGRES_URL=postgresql://username:password@localhost:5432/ai_chatbot
-POSTGRES_URL_NON_POOLING=postgresql://username:password@localhost:5432/ai_chatbot
-
 # Next Auth
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key-at-least-32-chars-long
@@ -29,8 +24,8 @@ NEXTAUTH_SECRET=your-secret-key-at-least-32-chars-long
 OPENAI_API_KEY=your-openai-api-key
 # ANTHROPIC_API_KEY=your-anthropic-api-key
 
-# Blob Storage (optional)
-# BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
+# Mock API Configuration (optional)
+# MOCK_API_DELAY=500 # milliseconds
 ```
 
 ### Installation Steps
@@ -48,69 +43,31 @@ cd ai-chatbot
 pnpm install
 ```
 
-3. **Set up the database**:
-
-```bash
-# Create the database
-createdb ai_chatbot
-
-# Run migrations
-pnpm db:migrate
-```
-
-4. **Start the development server**:
+3. **Start the development server**:
 
 ```bash
 pnpm dev
 ```
 
-5. **Access the application**:
+4. **Access the application**:
 
 Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
 
-## Database Setup
+## Mock API System
 
-### Local PostgreSQL Setup
+The application uses a mock API system for frontend development instead of a database.
 
-1. **Install PostgreSQL** (if not already installed):
+### Mock API Features
 
-- macOS: `brew install postgresql`
-- Ubuntu: `sudo apt install postgresql`
-- Windows: Download from [postgresql.org](https://www.postgresql.org/download/windows/)
+- **Local Storage Persistence**: User data, chats, and messages are stored in the browser's localStorage
+- **Simulated API Delays**: Configurable delays to simulate network latency
+- **Type-Safe API Interface**: Matches expected backend API responses
 
-2. **Create a database**:
+### Working with Mock Data
 
-```bash
-createdb ai_chatbot
-```
-
-3. **Run database migrations**:
-
-```bash
-pnpm db:migrate
-```
-
-### Database Schema Management
-
-The application uses Drizzle ORM for database schema management:
-
-- **Generate migrations**:
-
-```bash
-pnpm db:generate
-```
-
-- **Apply migrations**:
-
-```bash
-pnpm db:migrate
-```
-
-- **View database in Studio UI**:
-
-```bash
-pnpm db:studio
-```
+- All data is stored locally in the browser
+- Clearing browser cache/localStorage will reset all mock data
+- The mock system automatically creates initial sample data on first run
 
 ## Configuration Options
 
@@ -173,11 +130,7 @@ vercel
 
 In the Vercel dashboard, navigate to your project's settings and add the environment variables from your `.env.local` file.
 
-5. **Set up PostgreSQL database**:
-
-You can use Vercel Postgres by adding it as an integration in your Vercel project.
-
-6. **Deploy with production settings**:
+5. **Deploy with production settings**:
 
 ```bash
 vercel --prod
@@ -203,18 +156,18 @@ docker run -p 3000:3000 --env-file .env.production ai-chatbot
 
 ### Common Issues
 
-1. **Database connection issues**:
-   - Ensure PostgreSQL is running
-   - Check your connection string in the environment variables
-   - Verify database user has correct permissions
-
-2. **Authentication errors**:
+1. **Authentication errors**:
    - Ensure `NEXTAUTH_SECRET` is set
    - Check that `NEXTAUTH_URL` matches your application URL
 
-3. **AI provider issues**:
+2. **AI provider issues**:
    - Verify API keys are correct
    - Check API key permissions and quotas
+   
+3. **Mock API issues**:
+   - If data appears corrupted, clear localStorage in your browser
+   - Check browser console for any mock API errors
+   - Verify mock API initialization in the console logs
 
 ### Getting Help
 
@@ -222,7 +175,7 @@ If you encounter issues:
 
 1. Check the [GitHub repository issues](https://github.com/yourusername/ai-chatbot/issues)
 2. Review the application logs
-3. Consult the Next.js and Drizzle ORM documentation
+3. Consult the Next.js documentation
 
 ## Maintenance
 
@@ -240,44 +193,4 @@ git pull origin main
 
 ```bash
 pnpm install
-```
-
-3. **Apply migrations**:
-
-```bash
-pnpm db:migrate
-```
-
-4. **Restart the server**:
-
-```bash
-pnpm dev
-```
-
-### Backups
-
-For database backups:
-
-```bash
-# Create a backup
-pg_dump ai_chatbot > backup.sql
-
-# Restore from backup
-psql ai_chatbot < backup.sql
-```
-
-## Monitoring
-
-For production deployments, consider setting up:
-
-- **Error tracking**: Sentry, LogRocket
-- **Performance monitoring**: Vercel Analytics
-- **User analytics**: Google Analytics, Plausible
-
-## Scaling
-
-For high-traffic deployments:
-
-- Use a managed PostgreSQL service (AWS RDS, GCP Cloud SQL)
-- Set up a caching layer (Redis, Vercel Edge Cache)
-- Deploy to multiple regions using Vercel's global deployment 
+``` 

@@ -29,8 +29,8 @@ The application follows a modern web application architecture with Next.js at it
 │                    Backend Services                         │
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │  Database   │    │ AI Services │    │   File Storage  │  │
-│  │ (PostgreSQL)│    │             │    │  (Vercel Blob)  │  │
+│  │   Mock API  │    │ AI Services │    │   Mock Storage  │  │
+│  │  (LocalStor)│    │             │    │                 │  │
 │  └─────────────┘    └─────────────┘    └─────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -41,14 +41,14 @@ The application follows a modern web application architecture with Next.js at it
 The application uses several architectural patterns:
 
 1. **Model-View-Controller (MVC)**
-   - Models: Database schemas and data access layer
+   - Models: Mock data structures and localStorage persistence
    - Views: React components and pages
    - Controllers: API routes and server actions
 
 2. **Layered Architecture**
    - Presentation Layer: React components
    - Business Logic Layer: Service functions
-   - Data Access Layer: Database queries and schemas
+   - Mock API Layer: Mock API implementations
    - External Integration Layer: AI providers and external APIs
 
 3. **Client-Server Architecture**
@@ -103,10 +103,12 @@ Backend
 │   ├── Chat Service
 │   ├── Auth Service
 │   └── AI Service
-├── Data Access
-│   ├── Database Schemas
-│   ├── Query Functions
-│   └── Migration Scripts
+├── Mock API Layer
+│   ├── Mock API Base
+│   ├── Mock Data Models
+│   ├── Mock Auth API
+│   ├── Mock Chat API
+│   └── Mock Storage API
 └── External Integrations
     ├── AI Providers
     ├── Authentication
@@ -119,7 +121,7 @@ Backend
 
 ```
 ┌──────────┐    ┌────────────┐    ┌──────────────┐    ┌────────────┐
-│  Client  │    │ Auth Page  │    │  Auth API    │    │  Database  │
+│  Client  │    │ Auth Page  │    │  Auth API    │    │ Mock Auth  │
 └────┬─────┘    └──────┬─────┘    └──────┬───────┘    └──────┬─────┘
      │                 │                  │                   │
      │  1. Visit page  │                  │                   │
@@ -220,12 +222,12 @@ Backend
 │  └─────────────┘    └─────────────┘    └─────────────────┘  │
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │ PostgreSQL  │    │ Drizzle ORM │    │   Next-Auth     │  │
-│  │             │    │             │    │                 │  │
+│  │ Mock API    │    │ localStorage│    │   Next-Auth     │  │
+│  │ Layer       │    │             │    │                 │  │
 │  └─────────────┘    └─────────────┘    └─────────────────┘  │
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │ AI-SDK      │    │ Vercel Blob │    │   Zod           │  │
+│  │ AI-SDK      │    │ Mock Storage│    │   Zod           │  │
 │  │             │    │             │    │                 │  │
 │  └─────────────┘    └─────────────┘    └─────────────────┘  │
 │                                                             │
@@ -258,7 +260,7 @@ The application uses several design patterns:
 
 1. **Repository Pattern**
    - Abstraction over data access layer
-   - Example: `userRepository`, `chatRepository`
+   - Example: `mockUserRepository`, `mockChatRepository`
 
 2. **Service Pattern**
    - Business logic encapsulation
@@ -272,26 +274,24 @@ The application uses several design patterns:
    - Creation of objects without specifying concrete classes
    - Example: AI provider factory creates specific provider instances
 
+5. **Adapter Pattern**
+   - Interface for different backend implementations
+   - Example: Mock API adapters that implement the same interface as real APIs
+
 ## Scalability Considerations
 
 The architecture is designed for scalability:
 
 1. **Horizontal Scalability**
    - Stateless API routes and server functions
-   - Connection pooling for database
    - Serverless deployment support
 
-2. **Database Scalability**
-   - Efficient query patterns
-   - Pagination for large data sets
-   - Indexing strategy
-
-3. **Frontend Scalability**
+2. **Frontend Scalability**
    - Code splitting and lazy loading
    - Static generation where possible
    - Client-side caching
 
-4. **External Service Scalability**
+3. **External Service Scalability**
    - Rate limiting and retry mechanisms
    - Fallback strategies for external services
    - Queue systems for heavy workloads
@@ -303,7 +303,7 @@ The application implements several security measures:
 1. **Authentication**
    - Next-Auth for secure authentication
    - Password hashing
-   - Session management
+   - JWT-based session management
 
 2. **Authorization**
    - Role-based access control
@@ -312,7 +312,6 @@ The application implements several security measures:
 
 3. **Data Security**
    - Input validation
-   - SQL injection protection
    - XSS protection
 
 4. **API Security**
@@ -342,8 +341,8 @@ The application is designed for deployment on Vercel:
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │  Vercel     │    │  AI         │    │   Other         │  │
-│  │  Postgres   │    │  Providers  │    │   Services      │  │
+│  │  Browser    │    │  AI         │    │   Other         │  │
+│  │  Storage    │    │  Providers  │    │   Services      │  │
 │  └─────────────┘    └─────────────┘    └─────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -353,16 +352,15 @@ The application is designed for deployment on Vercel:
 
 Areas for potential architectural evolution:
 
-1. **Microservices Evolution**
-   - Breaking down into more focused services
-   - Service mesh for communication
+1. **Real Backend Integration**
+   - Replace mock APIs with real backend services
+   - Implement API middleware for smooth transition
 
 2. **Real-time Functionality**
    - WebSocket integration
    - Server-sent events
 
 3. **Advanced Caching**
-   - Redis or other distributed caching
    - Edge caching strategies
 
 4. **Multi-region Deployment**
