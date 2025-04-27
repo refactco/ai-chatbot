@@ -184,7 +184,13 @@ function PureMultimodalInput({
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
-          <SuggestedActions append={append} chatId={chatId} />
+          <SuggestedActions
+            append={(message, options) => {
+              append(message);
+              return Promise.resolve(undefined);
+            }}
+            chatId={chatId}
+          />
         )}
 
       <input
