@@ -109,8 +109,7 @@ export function Chat({
                 const updatedMessages = [...messages];
                 updatedMessages[assistantMessageIndex] = {
                   ...updatedMessages[assistantMessageIndex],
-                  content:
-                    updatedMessages[assistantMessageIndex].content + chunk,
+                  content: chunk,
                 };
                 return updatedMessages;
               }

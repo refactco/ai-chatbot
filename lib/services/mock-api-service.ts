@@ -132,11 +132,16 @@ export const mockApiService = {
         response = `Thank you for your message: "${message}". This is a mock response from the AI agent. In the real implementation, you'll get responses based on your backend's AI model.`;
       }
 
-      // Stream the response word by word to simulate streaming
-      const words = response.split(' ');
-      for (const word of words) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        onChunk(`${word} `);
+      // Stream the response in more natural chunks instead of word by word
+      // Break the response into sentences or meaningful chunks
+      const sentences = response.split(/(?<=[.!?])\s+/);
+      let accumulatedResponse = '';
+
+      for (const sentence of sentences) {
+        // Add a small delay between sentences
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        accumulatedResponse = `${accumulatedResponse}${sentence} `;
+        onChunk(accumulatedResponse);
       }
 
       // Create the final message
