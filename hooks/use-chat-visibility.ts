@@ -3,12 +3,14 @@
 import { useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { unstable_serialize } from 'swr/infinite';
-import { updateChatVisibility } from '@/app/(chat)/actions';
+import {
+  updateChatVisibility,
+  type VisibilityType,
+} from '@/app/(chat)/actions';
 import {
   getChatHistoryPaginationKey,
   type ChatHistory,
 } from '@/components/sidebar-history';
-import type { VisibilityType } from '@/components/visibility-selector';
 
 export function useChatVisibility({
   chatId,
@@ -32,7 +34,8 @@ export function useChatVisibility({
     if (!history) return localVisibility;
     const chat = history.chats.find((chat) => chat.id === chatId);
     if (!chat) return 'private';
-    return chat.visibility;
+    // Handle the case where visibility may not exist on the chat object
+    return (chat as any).visibility || 'private';
   }, [history, chatId, localVisibility]);
 
   const setVisibilityType = (updatedVisibilityType: VisibilityType) => {
