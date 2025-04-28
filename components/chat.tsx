@@ -1,7 +1,7 @@
 'use client';
 
-import type { Attachment, UIMessage } from '@/lib/ai/types';
-import { useChat } from '@/lib/ai/react';
+import type { Attachment, UIMessage } from '@/lib/api/types';
+import { useChat } from '@/lib/api/chat';
 import { useState } from 'react';
 import { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
