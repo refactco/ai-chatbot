@@ -1,0 +1,166 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor AI Agent Guidelines
+
+This document provides specific instructions for Cursor AI when working with the AI Chatbot project. Follow these guidelines to effectively navigate, understand, and modify the codebase.
+
+## Documentation Hierarchy
+
+When approaching this project, consult documentation in the following order:
+
+1. **Project Overview** (`docs/PROJECT-OVERVIEW.md`): Start here for a high-level understanding
+2. **Component Architecture** (`docs/COMPONENT-ARCHITECTURE.md`): Understand how components interact
+3. **Comprehensive Guide** (`docs/COMPREHENSIVE-GUIDE.md`): Get detailed technical information
+4. **Specific Guides**: Only after understanding the overall architecture, consult specific guides:
+   - `docs/API-INTEGRATION.md` for API-related tasks
+   - `docs/ARTIFACT-SYSTEM.md` for artifact-related tasks
+   - `docs/VERSION-CONTROL-SYSTEM.md` for version control features
+   - `docs/DEVELOPER-GUIDE.md` for development workflows
+   - `docs/MOCK-SERVICES.md` for mock API implementation
+
+## Project Structure
+
+The project follows this structure:
+- `/app`: Next.js app router pages and layouts
+  - `/(auth)`: Authentication pages (login, register)
+  - `/(chat)`: Chat application pages
+- `/components`: React components, organized by functionality
+- `/artifacts`: Artifact type implementations (text, image, sheet)
+- `/hooks`: Custom React hooks for state management
+- `/lib`: Utilities, services, and helper functions
+- `/docs`: Project documentation
+- `/public`: Static assets
+
+## Code Modification Guidelines
+
+When modifying code:
+
+1. **Maintain Component Structure**:
+   - Respect the component hierarchy in `docs/COMPONENT-ARCHITECTURE.md`
+   - Keep UI components separate from business logic
+   - Follow existing patterns for state management
+
+2. **API Integration**:
+   - The project currently uses mock API services (`lib/services/mock-api-service.ts`)
+   - When working with API code, reference `docs/API-INTEGRATION.md`
+   - Maintain compatibility with the planned real API structure
+
+3. **Message Handling**:
+   - The `Chat` component is the central orchestrator (`components/chat.tsx`)
+   - Messages follow a specific format defined in `lib/ai/types.ts`
+   - Message rendering is handled by the `Message` component (`components/message.tsx`)
+
+4. **Artifact System**:
+   - Artifacts are special content types (text, image, sheets)
+   - Reference `docs/ARTIFACT-SYSTEM.md` when working with artifacts
+   - Artifact types are defined in `/artifacts/{type}/client.tsx`
+   - The main container is `components/artifact.tsx`
+   - Version control features are documented in `docs/VERSION-CONTROL-SYSTEM.md`
+   - Artifact has a dual-storage approach (API and localStorage)
+
+5. **Storage Patterns**:
+   - Documents can use API-based or localStorage backends
+   - Special document IDs (with prefixes like `local:`) use localStorage
+   - Version history is maintained consistently across both storage types
+   - Reference storage implementation in artifact component for details
+
+## Troubleshooting Guide
+
+When troubleshooting issues:
+
+1. **For Message Display Problems**:
+   - Check that message IDs are unique
+   - Verify message format matches expected interface
+   - Inspect the message flow from API to UI
+
+2. **For API Communication Issues**:
+   - Check the mock API service implementation
+   - Verify callback functions are properly called
+   - Ensure promise chains are properly handled
+
+3. **For UI/UX Issues**:
+   - Consult Tailwind classes and shadcn/ui component documentation
+   - Check responsive behavior across breakpoints
+   - Verify animation states and transitions
+
+4. **For Artifact System Issues**:
+   - Verify artifact type is registered in `artifactDefinitions`
+   - Check localStorage for document versions with prefix `local-document-`
+   - Inspect version history and navigation functionality
+   - Examine console logs for artifact operations
+
+## Best Practices
+
+Follow these best practices when working with the codebase:
+
+1. **TypeScript**:
+   - Use proper types for all variables and functions
+   - Leverage TypeScript interfaces defined in `lib/ai/types.ts`
+   - Avoid using `any` type except when absolutely necessary
+
+2. **Component Structure**:
+   - Create focused, single-responsibility components
+   - Use memo for performance optimization where appropriate
+   - Follow the existing pattern of separating pure components from memoized exports
+
+3. **State Management**:
+   - Use React Context API for global state
+   - Use local component state for UI-specific state
+   - Utilize custom hooks to encapsulate complex logic
+   - Use `useArtifact` hook for artifact state management
+
+4. **Code Style**:
+   - Follow existing code formatting patterns
+   - Use meaningful variable and function names
+   - Add comments for complex logic but keep code self-documenting
+
+5. **Performance Optimization**:
+   - Use debouncing for expensive operations (like content editing)
+   - Implement custom equality checks for memoized components
+   - Be mindful of large document sizes in version history
+
+## Implementation Tips
+
+When implementing new features or fixing bugs:
+
+1. **New Feature Implementation**:
+   - First understand how similar features are implemented
+   - Reference the comprehensive guide for architectural patterns
+   - Follow existing patterns for state management and component organization
+
+2. **Bug Fixes**:
+   - Understand the full component lifecycle before making changes
+   - Check for any side effects your changes might introduce
+   - Verify fixes across different message types and scenarios
+
+3. **Performance Improvements**:
+   - Focus on memoization and component rendering optimization
+   - Consider impact on mobile devices
+   - Test with large message sets to ensure scalability
+
+4. **Artifact Modifications**:
+   - Follow the pluggable architecture pattern for new artifact types
+   - Ensure version control compatibility with any new features
+   - Test on both mobile and desktop layouts
+   - Verify both storage backends if modifying storage logic
+
+5. **Version Control Changes**:
+   - Ensure timestamp ordering is maintained for version history
+   - Test version navigation and restoration thoroughly
+   - Maintain compatibility with both storage systems
+   - Follow debouncing patterns for content saving
+
+## Information Gathering
+
+When you need more information:
+
+1. **Check Comprehensive Guide** (`docs/COMPREHENSIVE-GUIDE.md`) for detailed technical context
+2. **Look at related components** to understand patterns and relationships
+3. **Reference similar implementations** in the codebase for guidance
+4. **Examine version control system** for complex artifact interactions
+5. **Check localStorage in browser** for document versions during development
+
+Always prioritize understanding the existing architecture and patterns before making significant changes to ensure consistency and maintainability. 
