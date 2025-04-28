@@ -1,5 +1,5 @@
 import { useCopyToClipboard } from 'usehooks-ts';
-import type { UIMessage } from '@/lib/ai/types';
+import type { UIMessage } from '@/lib/api/types';
 import { CopyIcon } from './icons';
 import { Button } from './ui/button';
 import {

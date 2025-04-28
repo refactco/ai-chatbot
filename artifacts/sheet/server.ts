@@ -1,76 +1,78 @@
-import { provider } from '@/lib/ai/providers';
+import { apiService } from '@/lib/api';
 import { createDocumentHandler } from '@/lib/artifacts/server';
-import { streamObject } from '@/lib/ai/stream-utils';
-import { z } from 'zod';
 
 export const sheetDocumentHandler = createDocumentHandler<'sheet'>({
   kind: 'sheet',
   onCreateDocument: async ({ title, dataStream }) => {
     let draftContent = '';
 
-    const { fullStream } = streamObject({
-      model: provider.languageModel('artifact-model'),
-      system: 'Create a spreadsheet with the given title',
-      prompt: title,
-      schema: z.object({
-        csv: z.string().describe('CSV data'),
-      }),
-    });
+    // Use the API service to get spreadsheet content based on the title
+    await apiService.streamResponse(`Create a spreadsheet about: ${title}`, {
+      onChunk: (chunk) => {
+        if (typeof chunk !== 'string') {
+          if (
+            chunk.attachments?.length &&
+            chunk.attachments[0].type === 'sheet'
+          ) {
+            // Extract content from the attachment
+            const content = chunk.attachments[0].content || '';
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+            // Update the draft content
+            draftContent = content;
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { csv } = object;
-
-        if (csv) {
-          dataStream.writeData({
-            type: 'sheet-delta',
-            content: csv,
-          });
-
-          draftContent = csv;
+            // Stream content to UI
+            dataStream.writeData({
+              type: 'sheet-delta',
+              content: content,
+            });
+          }
         }
-      }
-    }
-
-    dataStream.writeData({
-      type: 'sheet-delta',
-      content: draftContent,
+      },
+      onFinish: () => {
+        // Stream is complete
+      },
+      onError: (error) => {
+        console.error('Error creating spreadsheet:', error);
+      },
     });
 
     return draftContent;
   },
   onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = '';
+    let draftContent = document.content || '';
 
-    const { fullStream } = streamObject({
-      model: provider.languageModel('artifact-model'),
-      system: 'Update the spreadsheet with the given description',
-      prompt: description,
-      schema: z.object({
-        csv: z.string(),
-      }),
-    });
+    // Use the API service to update spreadsheet content based on the description
+    await apiService.streamResponse(
+      `Update this spreadsheet with the following changes: ${description}\n\nCurrent content: ${draftContent}`,
+      {
+        onChunk: (chunk) => {
+          if (typeof chunk !== 'string') {
+            if (
+              chunk.attachments?.length &&
+              chunk.attachments[0].type === 'sheet'
+            ) {
+              // Extract content from the attachment
+              const content = chunk.attachments[0].content || '';
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+              // Update the draft content
+              draftContent = content;
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { csv } = object;
-
-        if (csv) {
-          dataStream.writeData({
-            type: 'sheet-delta',
-            content: csv,
-          });
-
-          draftContent = csv;
-        }
-      }
-    }
+              // Stream content to UI
+              dataStream.writeData({
+                type: 'sheet-delta',
+                content: content,
+              });
+            }
+          }
+        },
+        onFinish: () => {
+          // Stream is complete
+        },
+        onError: (error) => {
+          console.error('Error updating spreadsheet:', error);
+        },
+      },
+    );
 
     return draftContent;
   },

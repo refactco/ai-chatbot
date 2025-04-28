@@ -1,4 +1,4 @@
-import type { Attachment } from '@/lib/ai/types';
+import type { Attachment } from '@/lib/api/types';
 import { LoaderIcon } from './icons';
 
 export const PreviewAttachment = ({

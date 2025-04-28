@@ -1,8 +1,4 @@
-import type {
-  CoreAssistantMessage,
-  CoreToolMessage,
-  UIMessage,
-} from '@/lib/ai/types';
+import type { UIMessage, Message as CoreMessage } from '@/lib/api/types';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Document } from '@/lib/schema';
@@ -58,7 +54,7 @@ export function generateUUID(): string {
 // ResponseMessage: same as above, but with an id
 // Used for message tracking in chat UIs
 
-type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
+type ResponseMessageWithoutId = CoreMessage | CoreMessage;
 type ResponseMessage = ResponseMessageWithoutId & { id: string };
 
 // Get the most recent user message from a list of UI messages

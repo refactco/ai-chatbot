@@ -1,5 +1,4 @@
-import { smoothStream, streamText } from '@/lib/ai/stream-utils';
-import { provider } from '@/lib/ai/providers';
+import { apiService } from '@/lib/api';
 import { createDocumentHandler } from '@/lib/artifacts/server';
 
 export const textDocumentHandler = createDocumentHandler<'text'>({
@@ -7,62 +6,73 @@ export const textDocumentHandler = createDocumentHandler<'text'>({
   onCreateDocument: async ({ title, dataStream }) => {
     let draftContent = '';
 
-    const { fullStream } = streamText({
-      model: provider.languageModel('artifact-model'),
-      system:
-        'Write about the given topic. Markdown is supported. Use headings wherever appropriate.',
-      experimental_transform: smoothStream({ chunking: 'word' }),
-      prompt: title,
+    // Use the API service to get content based on title
+    await apiService.streamResponse(`Create a text document about: ${title}`, {
+      onChunk: (chunk) => {
+        if (typeof chunk !== 'string') {
+          if (
+            chunk.attachments?.length &&
+            chunk.attachments[0].type === 'text'
+          ) {
+            // Extract content from the attachment
+            const content = chunk.attachments[0].content || '';
+
+            // Update the draft content
+            draftContent = content;
+
+            // Stream content to UI
+            dataStream.writeData({
+              type: 'text-delta',
+              content: content,
+            });
+          }
+        }
+      },
+      onFinish: () => {
+        // Stream is complete
+      },
+      onError: (error) => {
+        console.error('Error creating text document:', error);
+      },
     });
-
-    for await (const delta of fullStream) {
-      const { type } = delta;
-
-      if (type === 'text-delta') {
-        const { textDelta } = delta;
-
-        draftContent += textDelta;
-
-        dataStream.writeData({
-          type: 'text-delta',
-          content: textDelta,
-        });
-      }
-    }
 
     return draftContent;
   },
   onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = '';
+    let draftContent = document.content || '';
 
-    const { fullStream } = streamText({
-      model: provider.languageModel('artifact-model'),
-      system: 'Update the text with the given description',
-      experimental_transform: smoothStream({ chunking: 'word' }),
-      prompt: description,
-      experimental_providerMetadata: {
-        openai: {
-          prediction: {
-            type: 'content',
-            content: document.content,
-          },
+    // Use the API service to update content based on description
+    await apiService.streamResponse(
+      `Update this text document with the following changes: ${description}\n\nCurrent content: ${draftContent}`,
+      {
+        onChunk: (chunk) => {
+          if (typeof chunk !== 'string') {
+            if (
+              chunk.attachments?.length &&
+              chunk.attachments[0].type === 'text'
+            ) {
+              // Extract content from the attachment
+              const content = chunk.attachments[0].content || '';
+
+              // Update the draft content
+              draftContent = content;
+
+              // Stream content to UI
+              dataStream.writeData({
+                type: 'text-delta',
+                content: content,
+              });
+            }
+          }
+        },
+        onFinish: () => {
+          // Stream is complete
+        },
+        onError: (error) => {
+          console.error('Error updating text document:', error);
         },
       },
-    });
-
-    for await (const delta of fullStream) {
-      const { type } = delta;
-
-      if (type === 'text-delta') {
-        const { textDelta } = delta;
-
-        draftContent += textDelta;
-        dataStream.writeData({
-          type: 'text-delta',
-          content: textDelta,
-        });
-      }
-    }
+    );
 
     return draftContent;
   },

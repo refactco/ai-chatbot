@@ -1,9 +1,8 @@
 import { PreviewMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
-import type { UIMessage } from '@/lib/ai/types';
+import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { memo } from 'react';
 import type { UIArtifact } from './artifact';
-import type { UseChatHelpers } from '@/lib/ai/types';
 
 interface ArtifactMessagesProps {
   chatId: string;

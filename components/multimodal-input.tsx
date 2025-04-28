@@ -1,6 +1,6 @@
 'use client';
 
-import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/ai/types';
+import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/api/types';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -116,7 +116,7 @@ function PureMultimodalInput({
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
     handleSubmit(undefined, {
-      experimental_attachments: attachments,
+      attachments: attachments,
     });
 
     setAttachments([]);

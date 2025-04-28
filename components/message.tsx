@@ -1,6 +1,6 @@
 'use client';
 
-import type { UIMessage } from '@/lib/ai/types';
+import type { UIMessage } from '@/lib/api/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
 import { PencilEditIcon, SparklesIcon, UserIcon, BrainIcon } from './icons';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
-import type { UseChatHelpers } from '@/lib/ai/types';
+import type { UseChatHelpers } from '@/lib/api/types';
 import { MessageReasoning } from './message-reasoning';
 
 const PurePreviewMessage = ({

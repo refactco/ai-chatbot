@@ -86,3 +86,12 @@ export interface UseChatHelpers {
   ) => void;
   status: 'streaming' | 'error' | 'submitted' | 'ready';
 }
+
+/**
+ * Stream writer interface for artifact data streaming
+ */
+export interface DataStreamWriter<T> {
+  write(data: T): void;
+  writeData(data: any): void;
+  close(): void;
+}

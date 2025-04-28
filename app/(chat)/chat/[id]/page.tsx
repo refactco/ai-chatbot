@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Chat } from '@/components/chat';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import type { Message } from '@/lib/schema';
-import type { UIMessage } from '@/lib/ai/types';
+import type { UIMessage } from '@/lib/api/types';
 import { apiService } from '@/lib/services/api-service';
 
 // Mock user session for authentication bypass

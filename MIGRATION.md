@@ -2,6 +2,37 @@
 
 This guide outlines the steps to migrate the codebase from an AI-specific implementation to a purely API-focused architecture. The frontend will interact with the API (mock or real) without any direct AI-specific code.
 
+## Migration Status
+
+✅ = Completed  
+🟡 = In Progress  
+❌ = Not Started  
+
+- ✅ Create API-focused modules (`lib/api/types.ts`, `lib/api/chat.ts`, `lib/api/index.ts`) 
+- ✅ Update UI components to use new API types
+  - ✅ `components/chat.tsx`
+  - ✅ `components/message.tsx`
+  - ✅ `components/multimodal-input.tsx`
+  - ✅ `components/artifact.tsx`
+  - ✅ `components/message-actions.tsx`
+  - ✅ `components/messages.tsx`
+  - ✅ `components/preview-attachment.tsx`
+  - ✅ `components/artifact-messages.tsx`
+  - ✅ `app/(chat)/chat/[id]/page.tsx`
+- ✅ Update service implementations
+  - ✅ `lib/services/mock-api-service.ts`
+  - ✅ `lib/services/api-service.ts`
+  - ✅ `lib/utils.ts`
+  - ✅ `mocks/handlers.ts`
+- ✅ Update artifact implementations
+  - ✅ `artifacts/text/server.ts`
+  - ✅ `artifacts/image/server.ts`
+  - ✅ `artifacts/sheet/server.ts`
+  - ✅ `lib/artifacts/server.ts`
+- 🟡 Test with mock API
+- ❌ Remove `/lib/ai` directory
+- ❌ Update documentation
+
 ## Migration Overview
 
 1. Move from `/lib/ai` to `/lib/api`
@@ -68,6 +99,7 @@ Files to update:
 - `artifacts/text/server.ts`
 - `artifacts/image/server.ts`
 - `artifacts/sheet/server.ts`
+- `lib/artifacts/server.ts`
 
 ## Step 5: Test With the Mock API
 
@@ -94,4 +126,11 @@ Once all components are working correctly:
 
 ## Note About the Mock Implementation
 
-The mock implementation (`mock-api-service.ts`) remains the same, continuing to simulate API responses with attachments, reasoning, and streaming capabilities. This allows the frontend to be developed and tested independently of the backend. 
+The mock implementation (`mock-api-service.ts`) remains the same, continuing to simulate API responses with attachments, reasoning, and streaming capabilities. This allows the frontend to be developed and tested independently of the backend.
+
+## Next Steps
+
+1. Start the development server and test the application
+2. Remove the `/lib/ai` directory once testing confirms all functionality works
+3. Update documentation to reflect the API-focused architecture
+4. Commit final changes 

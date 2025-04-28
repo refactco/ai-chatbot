@@ -2,7 +2,7 @@ import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
 import type { ArtifactKind } from '@/components/artifact';
-import type { DataStreamWriter } from '@/lib/ai/types';
+import type { DataStreamWriter } from '@/lib/api/types';
 import type { Document } from '../schema';
 
 export interface SaveDocumentProps {

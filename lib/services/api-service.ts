@@ -8,7 +8,7 @@
  * they are plain strings. If you need Date methods, convert them using new Date().
  */
 
-import type { Attachment } from '@/lib/ai/types';
+import type { Attachment } from '@/lib/api/types';
 
 // Type definitions for User, Chat, Message, and API responses
 export interface User {

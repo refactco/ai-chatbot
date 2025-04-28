@@ -1,4 +1,4 @@
-import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/ai/types';
+import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {

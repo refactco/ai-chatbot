@@ -11,7 +11,7 @@
  */
 
 import { generateUUID } from '@/lib/utils';
-import type { Attachment } from '@/lib/ai/types';
+import type { Attachment } from '@/lib/api/types';
 
 // Type definitions
 export interface ChatMessage {

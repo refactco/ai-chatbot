@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { generateUUID } from '@/lib/utils';
-import type { Attachment } from '@/lib/ai/types';
+import type { Attachment } from '@/lib/api/types';
 import { DOCUMENT_TITLES, SAMPLE_TEXT, SAMPLE_SHEET } from './data';
 
 interface ChatMessageRequest {

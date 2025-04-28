@@ -1,4 +1,4 @@
-import type { UIMessage, UseChatHelpers } from '@/lib/ai/types';
+import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Greeting } from './greeting';
