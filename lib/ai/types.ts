@@ -24,6 +24,7 @@ export interface CreateMessage {
 export interface UIMessage extends Message {
   attachments?: Attachment[];
   createdAt?: Date;
+  reasoning?: string;
 }
 
 export interface Attachment {

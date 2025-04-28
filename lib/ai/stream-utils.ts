@@ -66,12 +66,7 @@ export function streamObject<T>(options: {
   // Create a simple response object based on the schema
   let responseObj: any = {};
 
-  if (schemaFields.includes('code')) {
-    // Code artifact
-    responseObj = {
-      code: `// Generated code for: ${options.prompt}\n\nfunction example() {\n  console.log("This is placeholder code");\n}\n`,
-    };
-  } else if (schemaFields.includes('csv')) {
+  if (schemaFields.includes('csv')) {
     // Sheet artifact
     responseObj = {
       csv: `Column1,Column2,Column3\nValue1,Value2,Value3\nValue4,Value5,Value6`,

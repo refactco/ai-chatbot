@@ -4,12 +4,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { useWindowSize } from 'usehooks-ts';
 
-import type { UISuggestion } from '@/lib/editor/suggestions';
-
 import { CrossIcon, MessageIcon } from './icons';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import type { ArtifactKind } from './artifact';
+import type { Suggestion as SuggestionType } from '@/lib/schema';
+
+// Define a simplified UISuggestion interface that was previously imported
+interface UISuggestion extends SuggestionType {
+  id: string;
+  description: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+}
 
 export const Suggestion = ({
   suggestion,
@@ -29,7 +36,6 @@ export const Suggestion = ({
         <motion.div
           className={cn('cursor-pointer text-muted-foreground p-1', {
             'absolute -right-8': artifactKind === 'text',
-            'sticky top-0 right-4': artifactKind === 'code',
           })}
           onClick={() => {
             setIsExpanded(true);

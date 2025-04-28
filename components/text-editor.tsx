@@ -6,7 +6,7 @@ import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import React, { memo, useEffect, useRef } from 'react';
 
-import type { Suggestion } from '@/lib/db/schema';
+import type { Suggestion } from '@/lib/schema';
 import {
   documentSchema,
   handleTransaction,
@@ -160,5 +160,4 @@ function areEqual(prevProps: EditorProps, nextProps: EditorProps) {
     prevProps.onSaveContent === nextProps.onSaveContent
   );
 }
-
 export const Editor = memo(PureEditor, areEqual);

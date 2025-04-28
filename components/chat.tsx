@@ -81,61 +81,77 @@ export function Chat({
       setInput('');
       setAttachments([]);
 
+      // Maintain a mapping of message IDs for tracking updates
+      const messageIds = new Map();
+
       // Stream the AI response
       await mockApiService.streamResponse(
         userMessage.content,
         {
           onChunk: (chunk) => {
-            // For each chunk, update the assistant message
+            // For each chunk, update the appropriate message
             setMessages((messages) => {
-              // Find if we already have a streaming message
-              const assistantMessageIndex = messages.findIndex(
-                (msg) => msg.role === 'assistant' && msg.content === '',
-              );
+              if (typeof chunk === 'string') {
+                // Handle string chunks (legacy method)
+                const assistantMessageIndex = messages.findIndex(
+                  (msg) => msg.role === 'assistant' && msg.content === '',
+                );
 
-              if (assistantMessageIndex === -1) {
-                // If not, add a new empty assistant message
-                return [
-                  ...messages,
-                  {
-                    id: generateUUID(),
-                    role: 'assistant',
+                if (assistantMessageIndex === -1) {
+                  return [
+                    ...messages,
+                    {
+                      id: generateUUID(),
+                      role: 'assistant',
+                      content: chunk,
+                      createdAt: new Date(),
+                    },
+                  ];
+                } else {
+                  const updatedMessages = [...messages];
+                  updatedMessages[assistantMessageIndex] = {
+                    ...updatedMessages[assistantMessageIndex],
                     content: chunk,
-                    createdAt: new Date(),
-                  },
-                ];
+                  };
+                  return updatedMessages;
+                }
               } else {
-                // If yes, update the existing message
-                const updatedMessages = [...messages];
-                updatedMessages[assistantMessageIndex] = {
-                  ...updatedMessages[assistantMessageIndex],
-                  content: chunk,
-                };
-                return updatedMessages;
+                // Handle ChunkMessage objects
+                // Check if we've seen this message ID before
+                if (!messageIds.has(chunk.id)) {
+                  // New message, add it to the map and to the messages
+                  messageIds.set(chunk.id, messages.length);
+                  return [
+                    ...messages,
+                    { ...chunk, createdAt: chunk.createdAt || new Date() },
+                  ];
+                } else {
+                  // Update existing message
+                  const messageIndex = messageIds.get(chunk.id);
+                  const updatedMessages = [...messages];
+                  updatedMessages[messageIndex] = {
+                    ...updatedMessages[messageIndex],
+                    content: chunk.content,
+                  };
+                  return updatedMessages;
+                }
               }
             });
           },
           onFinish: (message) => {
             // When done, ensure the final message is properly formatted
-            setMessages((messages) => {
-              const assistantMessageIndex = messages.findIndex(
-                (msg) =>
-                  msg.role === 'assistant' &&
-                  !msg.content.endsWith(message.content),
-              );
-
-              if (assistantMessageIndex !== -1) {
-                // Update to the final message
-                const updatedMessages = [...messages];
-                updatedMessages[assistantMessageIndex] = {
-                  ...updatedMessages[assistantMessageIndex],
-                  id: message.id,
-                  content: message.content,
-                };
-                return updatedMessages;
-              }
-              return messages;
-            });
+            setMessages((messages) =>
+              messages.map((msg) => {
+                // Only update the assistant message (not the reasoning message)
+                if (msg.id === message.id) {
+                  return {
+                    ...msg,
+                    content: message.content,
+                  };
+                }
+                return msg;
+              }),
+            );
           },
           onError: (error) => {
             console.error('Error streaming response:', error);

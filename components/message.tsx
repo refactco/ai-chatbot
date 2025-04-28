@@ -3,7 +3,7 @@
 import type { UIMessage } from '@/lib/ai/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
-import { PencilEditIcon, SparklesIcon, UserIcon } from './icons';
+import { PencilEditIcon, SparklesIcon, UserIcon, BrainIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -49,6 +49,14 @@ const PurePreviewMessage = ({
             },
           )}
         >
+          {message.role === 'system' && (
+            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+              <div className="translate-y-px">
+                <BrainIcon size={14} />
+              </div>
+            </div>
+          )}
+
           {message.role === 'assistant' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
@@ -69,25 +77,58 @@ const PurePreviewMessage = ({
             {message.attachments && (
               <div
                 data-testid={`message-attachments`}
-                className="flex flex-row justify-end gap-2"
+                className="flex flex-col justify-end gap-3"
               >
                 {message.attachments.map((attachment) => (
                   <PreviewAttachment
-                    key={attachment.url}
+                    key={
+                      attachment.url ||
+                      attachment.name ||
+                      `attachment-${attachment.type}-${Math.random().toString(36).substring(2, 9)}`
+                    }
                     attachment={attachment}
+                    inMessage={true}
                   />
                 ))}
               </div>
             )}
 
+            {message.role === 'system' && message.content && (
+              <div className="flex flex-col gap-2">
+                <div
+                  data-testid="reasoning-content"
+                  className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border border-border"
+                >
+                  <div className="text-xs font-medium mb-1 text-foreground/80">
+                    AI Reasoning Process:
+                  </div>
+                  <Markdown>{message.content}</Markdown>
+                </div>
+              </div>
+            )}
+
             {message.role === 'assistant' && message.content && (
-              <div className="flex flex-row gap-2 items-start">
+              <div className="flex flex-col gap-4">
                 <div
                   data-testid="message-content"
                   className="flex flex-col gap-4"
                 >
                   <Markdown>{message.content}</Markdown>
                 </div>
+
+                {message.reasoning && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div
+                      data-testid="assistant-reasoning-content"
+                      className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border border-border"
+                    >
+                      <div className="text-xs font-medium mb-1 text-foreground/80">
+                        AI Reasoning Process:
+                      </div>
+                      <Markdown>{message.reasoning}</Markdown>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

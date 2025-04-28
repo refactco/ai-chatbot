@@ -4,7 +4,6 @@ import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +21,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { ChatItem } from './sidebar-history-item';
-import { LoaderIcon } from './icons';
-import { mockApiService, ChatSummary } from '@/lib/services/mock-api-service';
+import { mockApiService, type ChatSummary } from '@/lib/services/mock-api-service';
 
 type GroupedChats = {
   today: ChatSummary[];

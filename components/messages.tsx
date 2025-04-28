@@ -38,19 +38,27 @@ function PureMessages({
     >
       {compatibleMessages.length === 0 && <Greeting />}
 
-      {compatibleMessages.map((message: any, index: number) => (
-        <PreviewMessage
-          key={message.id}
-          chatId={chatId}
-          message={message}
-          isLoading={
-            status === 'streaming' && compatibleMessages.length - 1 === index
-          }
-          setMessages={compatibleSetMessages}
-          reload={compatibleReload}
-          isReadonly={isReadonly}
-        />
-      ))}
+      {compatibleMessages.map((message: any, index: number) => {
+        // Ensure each message has a unique key, using message.id if available,
+        // or a combination of role, content, and index as fallback
+        const messageKey =
+          message.id ||
+          `message-${message.role}-${index}-${message.content?.substring(0, 10) || 'empty'}`;
+
+        return (
+          <PreviewMessage
+            key={messageKey}
+            chatId={chatId}
+            message={message}
+            isLoading={
+              status === 'streaming' && compatibleMessages.length - 1 === index
+            }
+            setMessages={compatibleSetMessages}
+            reload={compatibleReload}
+            isReadonly={isReadonly}
+          />
+        );
+      })}
 
       {status === 'submitted' &&
         compatibleMessages.length > 0 &&

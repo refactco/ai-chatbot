@@ -12,6 +12,8 @@ import type { Suggestion } from '@/lib/schema';
 import type { ArtifactKind } from '@/components/artifact';
 
 export interface UISuggestion extends Suggestion {
+  id: string;
+  description: string;
   selectionStart: number;
   selectionEnd: number;
 }
@@ -54,6 +56,7 @@ export function projectWithPositions(
     if (!positions) {
       return {
         ...suggestion,
+        description: suggestion.content || suggestion.suggestedText || '',
         selectionStart: 0,
         selectionEnd: 0,
       };
@@ -61,6 +64,7 @@ export function projectWithPositions(
 
     return {
       ...suggestion,
+      description: suggestion.content || suggestion.suggestedText || '',
       selectionStart: positions.start,
       selectionEnd: positions.end,
     };

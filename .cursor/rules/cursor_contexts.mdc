@@ -1,0 +1,146 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor AI Context Guidelines
+
+This document provides guidelines for effectively providing context to Cursor AI when seeking assistance with the AI Chatbot project.
+
+## Essential Contexts to Provide
+
+When asking Cursor AI for help, include these contexts for optimal results:
+
+1. **Documentation References**
+   - Always include relevant documentation files as context
+   - For general questions, include `docs/PROJECT-OVERVIEW.md`
+   - For component-specific questions, include `docs/COMPONENT-ARCHITECTURE.md`
+   - For in-depth technical details, include `docs/COMPREHENSIVE-GUIDE.md`
+
+2. **Related Code Files**
+   - Include the primary file you're working with
+   - Include directly related component files
+   - Include relevant utility or service files
+   - For complex features, include parent components that use your component
+
+3. **Type Definitions**
+   - Always include `lib/ai/types.ts` when working with message-related code
+   - Include interface definitions relevant to your task
+
+## Context Templates
+
+Use these templates for different types of requests:
+
+### Feature Implementation
+
+```
+I need help implementing [feature description].
+
+Contexts:
+- docs/PROJECT-OVERVIEW.md (for project understanding)
+- docs/COMPONENT-ARCHITECTURE.md (for component relationships)
+- [relevant specific guide] (API-INTEGRATION.md, ARTIFACT-SYSTEM.md, etc.)
+- [primary component file you're modifying]
+- [related component files]
+- lib/ai/types.ts (for type definitions)
+```
+
+### Bug Fixing
+
+```
+I'm encountering a bug where [bug description].
+
+Contexts:
+- [file with the bug]
+- [related component files]
+- lib/ai/types.ts (if message-related)
+- docs/COMPREHENSIVE-GUIDE.md (for technical details)
+- [any error logs or specific behavior observed]
+```
+
+### Code Understanding
+
+```
+I need to understand how [feature/component] works.
+
+Contexts:
+- [main component file]
+- [parent component files]
+- [child component files]
+- docs/COMPONENT-ARCHITECTURE.md
+- docs/COMPREHENSIVE-GUIDE.md (relevant sections)
+```
+
+## Component-Specific Contexts
+
+For specific areas of the application, include these contexts:
+
+### Message System
+
+```
+- components/message.tsx
+- components/messages.tsx
+- lib/ai/types.ts
+- docs/COMPONENT-ARCHITECTURE.md (Message Components section)
+```
+
+### Chat Interface
+
+```
+- components/chat.tsx
+- components/multimodal-input.tsx
+- lib/ai/react.ts
+- docs/COMPONENT-ARCHITECTURE.md (Chat Component section)
+```
+
+### API Integration
+
+```
+- lib/services/mock-api-service.ts 
+- lib/services/api-service.ts
+- lib/ai/providers.ts
+- docs/API-INTEGRATION.md
+```
+
+### Artifact System
+
+```
+- components/artifact.tsx
+- components/data-stream-handler.tsx
+- components/artifact-messages.tsx
+- docs/ARTIFACT-SYSTEM.md
+```
+
+## Best Practices for Providing Context
+
+1. **Be Specific and Concise**
+   - Provide only relevant context files
+   - Highlight specific areas you need help with
+   - Describe your understanding of the current code
+
+2. **Include Implementation Details**
+   - Mention current state management approach
+   - Note any specific TypeScript types in use
+   - Reference similar implementations if they exist
+
+3. **Specify Constraints**
+   - Mention dependencies that cannot be changed
+   - Note performance requirements
+   - Highlight backward compatibility needs
+
+4. **For Complex Changes**
+   - Include both high-level documentation and specific code files
+   - Mention related components that might be affected
+   - Provide step-by-step breakdown of the planned changes
+
+## When To Update Comprehensive Guide
+
+After making significant changes or learning new details about the project, update `docs/COMPREHENSIVE-GUIDE.md` with:
+
+1. Implementation details discovered
+2. New architectural patterns established
+3. Performance optimizations implemented
+4. Edge cases and their handling
+5. API integration specifics
+
+This ensures that the guide remains a living document that accurately reflects the current state and understanding of the project. 

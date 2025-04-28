@@ -1,8 +1,7 @@
 'use client';
 import { ChevronUp } from 'lucide-react';
 import Image from 'next/image';
-import type { User } from 'next-auth';
-import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 
 import {
@@ -17,9 +16,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { toast } from 'sonner';
 
-export function SidebarUserNav({ user }: { user: User }) {
+// Mocked user type
+interface MockUser {
+  email: string;
+  name?: string;
+  image?: string;
+}
+
+export function SidebarUserNav({ user }: { user: MockUser }) {
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
+
+  // Mock sign out function
+  const handleSignOut = () => {
+    // Add any cleanup logic here (clear local storage, cookies, etc.)
+    toast.success('Signed out successfully');
+
+    // Redirect to home page
+    setTimeout(() => {
+      router.push('/');
+      router.refresh();
+    }, 1000);
+  };
 
   return (
     <SidebarMenu>
@@ -28,7 +48,7 @@ export function SidebarUserNav({ user }: { user: User }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent bg-background data-[state=open]:text-sidebar-accent-foreground h-10">
               <Image
-                src={`https://avatar.vercel.sh/${user.email}`}
+                src={user.image || `https://avatar.vercel.sh/${user.email}`}
                 alt={user.email ?? 'User Avatar'}
                 width={24}
                 height={24}
@@ -53,11 +73,7 @@ export function SidebarUserNav({ user }: { user: User }) {
               <button
                 type="button"
                 className="w-full cursor-pointer"
-                onClick={() => {
-                  signOut({
-                    redirectTo: '/',
-                  });
-                }}
+                onClick={handleSignOut}
               >
                 Sign out
               </button>

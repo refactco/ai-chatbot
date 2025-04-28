@@ -185,7 +185,7 @@ function PureMultimodalInput({
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
           <SuggestedActions
-            append={(message, options) => {
+            append={(message: UIMessage, options: any) => {
               append(message);
               return Promise.resolve(undefined);
             }}
@@ -208,12 +208,19 @@ function PureMultimodalInput({
           className="flex flex-row gap-2 overflow-x-scroll items-end"
         >
           {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
+            <PreviewAttachment
+              key={
+                attachment.url ||
+                attachment.name ||
+                `attachment-${attachment.type}-${Math.random().toString(36).substring(2, 9)}`
+              }
+              attachment={attachment}
+            />
           ))}
 
           {uploadQueue.map((filename) => (
             <PreviewAttachment
-              key={filename}
+              key={`upload-${filename}-${Math.random().toString(36).substring(2, 9)}`}
               attachment={{
                 type: 'file',
                 url: '',
