@@ -8,6 +8,8 @@
  * they are plain strings. If you need Date methods, convert them using new Date().
  */
 
+import type { Attachment } from '@/lib/ai/types';
+
 // Type definitions for User, Chat, Message, and API responses
 export interface User {
   id: string;
@@ -45,6 +47,29 @@ export interface ChatDetailResponse {
 export interface ChatCompletionResponse {
   message: Message;
   isStreaming?: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  createdAt: Date;
+  attachments?: Attachment[];
+  reasoning?: string;
+}
+
+export interface ChatSummary {
+  id: string;
+  title: string;
+  lastMessagePreview: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StreamResponseOptions {
+  onChunk: (chunk: string | ChatMessage) => void;
+  onFinish: (message: ChatMessage) => void;
+  onError: (error: Error) => void;
 }
 
 // Helper function to get data from localStorage by key
@@ -352,4 +377,137 @@ export const chatService = {
 export const apiService = {
   auth: authService,
   chat: chatService,
+
+  // Send a message to the AI agent
+  sendMessage: async (
+    message: string,
+    attachments: Attachment[] = [],
+    chatId?: string,
+  ): Promise<ChatMessage> => {
+    const response = await fetch('/api/chat/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, attachments, chatId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error sending message: ${response.statusText}`);
+    }
+
+    return await response.json();
+  },
+
+  // Stream an AI response based on a user message
+  streamResponse: async (
+    message: string,
+    options: StreamResponseOptions,
+    chatId?: string,
+    attachments: Attachment[] = [],
+  ): Promise<void> => {
+    const { onChunk, onFinish, onError } = options;
+
+    try {
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, chatId, attachments }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error streaming response: ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        const chunk = decoder.decode(value);
+        const events = chunk.split('\n').filter(Boolean);
+
+        for (const event of events) {
+          try {
+            const parsed = JSON.parse(event);
+
+            switch (parsed.type) {
+              case 'reasoning':
+              case 'assistant':
+              case 'attachment':
+              case 'artifact':
+                onChunk(parsed.message);
+                break;
+              case 'finish':
+                assistantMessage = parsed.message;
+                break;
+            }
+          } catch (e) {
+            console.error('Error parsing stream chunk:', e);
+          }
+        }
+      }
+
+      if (assistantMessage) {
+        onFinish(assistantMessage);
+      }
+    } catch (error) {
+      console.error('Error in API stream:', error);
+      onError(
+        error instanceof Error
+          ? error
+          : new Error('Unknown error in stream response'),
+      );
+    }
+  },
+
+  // Get chat history
+  getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
+    const response = await fetch(`/api/chats?limit=${limit}&offset=${offset}`);
+
+    if (!response.ok) {
+      throw new Error(`Error fetching chat history: ${response.statusText}`);
+    }
+
+    return await response.json();
+  },
+
+  // Get chat by ID with its messages
+  getChatById: async (
+    chatId: string,
+  ): Promise<{ chat: ChatSummary; messages: ChatMessage[] } | null> => {
+    const response = await fetch(`/api/chat/${chatId}`);
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Error fetching chat: ${response.statusText}`);
+    }
+
+    return await response.json();
+  },
+
+  // Create a new empty chat
+  createNewChat: async (): Promise<ChatSummary> => {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error creating chat: ${response.statusText}`);
+    }
+
+    return await response.json();
+  },
 };

@@ -6,15 +6,17 @@ This project serves as a frontend for an AI assistant application built with Nex
 
 ## Current Architecture
 
-The frontend communicates with the backend through three main API endpoints:
+The frontend communicates with the backend through several main API endpoints:
 1. `sendMessage` - For sending user messages to the AI
 2. `streamResponse` - For streaming AI responses back to the user
 3. `getChatHistory` - For retrieving chat history
+4. `document` - For managing document versions and content
 
 Currently, the application uses mock services to simulate backend behavior:
 
 1. **Mock API Service** (`lib/services/mock-api-service.ts`): Simulates AI responses, chat history, and artifact generation
 2. **Local Storage API Service** (`lib/services/api-service.ts`): Provides persistence using browser localStorage
+3. **Dual Storage System**: Supports both API and localStorage for artifact data
 
 ### Mock API Service Endpoints
 
@@ -35,6 +37,7 @@ The mock API simulates backend behavior with:
 - In-memory chat storage
 - Delay simulation for realistic feel
 - Artifact generation (text, images, data tables)
+- Version control for artifacts
 
 ## Data Structures
 
@@ -68,6 +71,66 @@ export interface Attachment {
   content?: string;
   url: string;
 }
+```
+
+### Document Structure
+
+```typescript
+export interface Document {
+  id: string;
+  kind: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+}
+```
+
+## Artifact System Integration
+
+The artifact system uses a dual-storage approach for document management:
+
+### API-Based Document Storage
+
+```typescript
+// Fetch document versions
+const { data: apiDocuments } = useSWR<Array<Document>>(
+  `/api/document?id=${documentId}`,
+  fetcher
+);
+
+// Create new document version
+await fetch(`/api/document?id=${documentId}`, {
+  method: 'POST',
+  body: JSON.stringify({
+    title,
+    content,
+    kind,
+  }),
+});
+
+// Restore previous document version
+await fetch(
+  `/api/document?id=${documentId}&timestamp=${timestamp}`,
+  { method: 'DELETE' }
+);
+```
+
+### Local Storage Document Management
+
+For development or special document types, the system uses localStorage:
+
+```typescript
+// Storage key pattern
+const localStorageKey = `local-document-${documentId}`;
+
+// Save document versions
+localStorage.setItem(localStorageKey, JSON.stringify(documents));
+
+// Retrieve document versions
+const storedData = localStorage.getItem(localStorageKey);
+const documents = storedData ? JSON.parse(storedData) : [];
 ```
 
 ## Real Backend Integration Process
@@ -170,6 +233,37 @@ export const realApiService = {
     const response = await apiClient.post('/api/chats');
     return response.data;
   },
+  
+  // Document API
+  
+  // Get document versions
+  getDocumentVersions: async (documentId: string): Promise<Document[]> => {
+    const response = await apiClient.get(`/api/document?id=${documentId}`);
+    return response.data;
+  },
+  
+  // Create document version
+  createDocumentVersion: async (
+    documentId: string,
+    title: string,
+    content: string,
+    kind: string
+  ): Promise<Document> => {
+    const response = await apiClient.post(`/api/document?id=${documentId}`, {
+      title,
+      content,
+      kind,
+    });
+    return response.data;
+  },
+  
+  // Restore document version
+  restoreDocumentVersion: async (
+    documentId: string,
+    timestamp: string
+  ): Promise<void> => {
+    await apiClient.delete(`/api/document?id=${documentId}&timestamp=${timestamp}`);
+  },
 };
 ```
 
@@ -246,86 +340,252 @@ const customHandleSubmit = async (
 };
 ```
 
+### Step 5: Update Artifact Component
+
+Modify the artifact component to use real document API:
+
+```typescript
+// Replace in components/artifact.tsx
+const { data: apiDocuments, mutate: mutateDocuments } = useSWR<Array<Document>>(
+  shouldFetchDocument ? `/api/document?id=${actualDocumentId}` : null,
+  fetcher,
+);
+
+// Replace handleContentChange with real API
+const handleContentChange = useCallback(
+  async (updatedContent: string) => {
+    if (!artifact) return;
+    
+    setIsContentDirty(true);
+    
+    try {
+      await realApiService.createDocumentVersion(
+        artifact.documentId,
+        artifact.title,
+        updatedContent,
+        artifact.kind
+      );
+      
+      mutateDocuments();
+      setIsContentDirty(false);
+    } catch (error) {
+      console.error('Error updating document:', error);
+      toast.error('Failed to save changes. Please try again.');
+      setIsContentDirty(false);
+    }
+  },
+  [artifact, mutateDocuments]
+);
+```
+
 ## Authentication Integration
 
-### Authentication with Google OAuth
+### JWT Authentication
 
-Implement proper authentication using NextAuth.js:
+Implement JWT-based authentication:
 
 ```typescript
-// app/api/auth/[...nextauth]/route.ts
-import NextAuth from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
+// lib/services/auth-service.ts
+import apiClient from './api-client';
+import { User } from '@/lib/schema';
 
-export const authOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  callbacks: {
-    async session({ session, token }) {
-      // Add user ID to session
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
+interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  user: User;
+}
+
+export const authService = {
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const response = await apiClient.post('/api/auth/login', {
+      email,
+      password,
+    });
+    
+    // Store tokens
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('refreshToken', response.data.refreshToken);
+    
+    return response.data;
+  },
+  
+  register: async (
+    name: string,
+    email: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    const response = await apiClient.post('/api/auth/register', {
+      name,
+      email,
+      password,
+    });
+    
+    // Store tokens
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('refreshToken', response.data.refreshToken);
+    
+    return response.data;
+  },
+  
+  logout: async (): Promise<void> => {
+    await apiClient.post('/api/auth/logout');
+    
+    // Clear tokens
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  },
+  
+  refreshToken: async (): Promise<string> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await apiClient.post('/api/auth/refresh', {
+      refreshToken,
+    });
+    
+    localStorage.setItem('token', response.data.token);
+    
+    return response.data.token;
+  },
+  
+  getCurrentUser: async (): Promise<User> => {
+    const response = await apiClient.get('/api/auth/me');
+    return response.data;
   },
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
 ```
 
-### Add Auth Headers to API Requests
+### Axios Interceptor for Token Refresh
 
-Ensure API requests include authentication tokens:
+Add an interceptor to handle token expiration:
 
 ```typescript
-import { getSession } from 'next-auth/react';
+// lib/services/api-client.ts
+import axios from 'axios';
+import { authService } from './auth-service';
 
-// Add auth interceptor
-apiClient.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.user) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
-  }
-  return config;
+const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
+// Add request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Add response interceptor
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is 401 and not a retry
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Refresh token
+        const newToken = await authService.refreshToken();
+        
+        // Update header
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        // Retry request
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Redirect to login
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;
 ```
 
-## Error Handling and Testing
+## Testing the Integration
 
-### Error Handling Strategies
+Test both the API service and authentication with these strategies:
 
-- Implement retry mechanisms for transient errors
-- Add fallback content for failed API calls
-- Create user-friendly error messages
-- Log detailed error information for debugging
+1. **Start with Non-Critical Endpoints**: Begin by integrating read-only endpoints like chat history
+2. **Add Authentication**: Implement login/register before message endpoints
+3. **Integrate Message Endpoints**: Move to message sending and receiving
+4. **Artifact Integration**: Finally, integrate artifact and document endpoints
+5. **Error Handling**: Test all error scenarios thoroughly
 
-### Testing Strategy
+## Real-time Features
 
-1. Create a testing environment that can be switched between mock and real APIs
-2. Implement feature flags to gradually roll out real API integration
-3. Add monitoring and logging to catch integration issues
+For real-time updates and collaborative features:
 
-## Implementation Roadmap
+```typescript
+// Example WebSocket integration
+const connectWebSocket = (userId: string, token: string) => {
+  const socket = new WebSocket(
+    `${process.env.NEXT_PUBLIC_WS_URL}/ws?userId=${userId}&token=${token}`
+  );
+  
+  socket.onopen = () => {
+    console.log('WebSocket connected');
+  };
+  
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    // Handle different message types
+    switch (data.type) {
+      case 'new_message':
+        // Handle new message
+        break;
+      case 'artifact_update':
+        // Handle artifact update
+        break;
+      case 'user_activity':
+        // Handle user activity
+        break;
+      default:
+        console.log('Unknown message type:', data.type);
+    }
+  };
+  
+  socket.onclose = () => {
+    console.log('WebSocket disconnected');
+    // Reconnect logic
+    setTimeout(() => connectWebSocket(userId, token), 5000);
+  };
+  
+  socket.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+  
+  return socket;
+};
+```
 
-1. **Authentication**: Implement Google OAuth with NextAuth.js
-2. **Real API Integration**: Connect to the real backend API once it's ready
-3. **Enhanced Error Handling**: Add more robust error handling for API failures
-4. **Document Upload**: Implement the document upload functionality
-5. **Artifact Generation**: Complete the integration of real artifact generation
+## Migration Strategy
 
-## Key Components
+To ensure a smooth transition from mock to real API:
 
-- **AI Provider**: Acts as a bridge between the UI and the API (`lib/ai/providers.ts`)
-- **Chat Component**: The main UI component for the chat interface (`components/chat.tsx`)
-- **DataStreamHandler**: Handles streaming data for artifacts (`components/data-stream-handler.tsx`)
-- **SidebarHistory**: Displays chat history from the API (`components/sidebar-history.tsx`)
-
-## Notes
-
-The mock API structure closely mirrors the expected real API, making the transition smoother when the backend is ready. The chat history currently uses in-memory storage that persists for the duration of the browser session. In the real implementation, this will be replaced with proper persistent storage in a database. 
+1. **Parallel Implementation**: Keep mock services while implementing real ones
+2. **Feature Flags**: Use environment variables to toggle between implementations
+3. **Gradual Rollout**: Migrate one endpoint at a time
+4. **Comprehensive Testing**: Test each migration thoroughly before proceeding
+5. **Fallback Mechanisms**: Implement fallbacks to mock services if real API fails 

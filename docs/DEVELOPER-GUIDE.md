@@ -53,6 +53,13 @@ ai-chatbot/
 │   ├── chat.tsx             # Main chat component
 │   ├── message.tsx          # Message component
 │   └── ...                  # Other components
+├── artifacts/               # Artifact type implementations
+│   ├── text/                # Text artifact components
+│   ├── image/               # Image artifact components
+│   └── sheet/               # Sheet artifact components
+├── hooks/                   # Custom React hooks
+│   ├── use-artifact.ts      # Artifact state management
+│   └── ...                  # Other hooks
 ├── lib/                     # Utility functions and services
 │   ├── ai/                  # AI-related utilities and types
 │   ├── services/            # API services (mock and real)
@@ -112,7 +119,123 @@ ai-chatbot/
 
 3. To change how messages are processed, modify `lib/services/mock-api-service.ts` (for mock implementation) or `lib/ai/react.ts` (for general chat handling)
 
-#### Working with Mock API
+#### Working with the Artifact System
+
+The artifact system uses a pluggable architecture for different content types:
+
+1. **Understanding Artifact Types**:
+   - Artifacts are defined in `/artifacts/{type}/client.tsx`
+   - Each artifact type implements a standard interface
+   - Core artifact UI is in `components/artifact.tsx`
+
+2. **Adding a New Artifact Type**:
+   ```tsx
+   // artifacts/mynew/client.tsx
+   import { ArtifactContentProps } from '@/lib/types';
+   
+   export const myNewArtifact = {
+     kind: 'mynew',
+     name: 'My New Artifact',
+     description: 'Description of the new artifact type',
+     
+     // Component to render the content
+     content: ({ 
+       content, 
+       onSaveContent, 
+       mode,
+       isCurrentVersion,
+       // other props...
+     }: ArtifactContentProps) => {
+       return (
+         <div>
+           {/* Artifact content implementation */}
+         </div>
+       );
+     }
+   };
+   ```
+
+3. **Register the New Artifact Type**:
+   ```tsx
+   // components/artifact.tsx
+   import { myNewArtifact } from '@/artifacts/mynew/client';
+   
+   // Add to artifact definitions
+   export const artifactDefinitions = [
+     textArtifact,
+     imageArtifact, 
+     sheetArtifact,
+     myNewArtifact // Add your new artifact type
+   ];
+   ```
+
+4. **Testing Your Artifact**:
+   - Add a test trigger in the mock service
+   - Use specialized mock data for your artifact type
+
+#### Working with Version Control
+
+The version control system supports both API and localStorage backends:
+
+1. **Version Data Structure**:
+   ```typescript
+   interface Document {
+     id: string;
+     kind: string;
+     title: string;
+     content: string;
+     createdAt: Date;
+     updatedAt: Date;
+     userId: string;
+   }
+   ```
+
+2. **Creating New Versions**:
+   ```typescript
+   // For API documents
+   await fetch(`/api/document?id=${documentId}`, {
+     method: 'POST',
+     body: JSON.stringify({
+       title,
+       content,
+       kind,
+     }),
+   });
+   
+   // For local documents
+   const newDocument = {
+     id: documentId,
+     kind,
+     title,
+     content,
+     createdAt: new Date(),
+     updatedAt: new Date(),
+     userId: 'local-user',
+   };
+   localStorage.setItem(
+     `local-document-${documentId}`,
+     JSON.stringify([...currentDocuments, newDocument])
+   );
+   ```
+
+3. **Navigating Versions**:
+   ```typescript
+   // Navigate to a specific version
+   setCurrentVersionIndex(targetIndex);
+   
+   // Get content of specific version
+   const versionContent = documents[currentVersionIndex]?.content || '';
+   ```
+
+4. **Restoring Versions**:
+   ```typescript
+   // Filter versions to keep only those before selected timestamp
+   const restoredVersions = documents.filter(
+     doc => !isAfter(new Date(doc.createdAt), selectedTimestamp)
+   );
+   ```
+
+### Working with Mock API
 
 The application uses mock services for development. When adding new features:
 
@@ -120,27 +243,24 @@ The application uses mock services for development. When adding new features:
 2. Simulate realistic delays and responses
 3. Test all scenarios (success, error, loading states)
 
-### Testing
+### Testing Artifacts
 
-Run the test suite:
-```bash
-npm run test
-# or
-yarn test
-```
+To test artifact generation and interaction:
 
-For component testing, use React Testing Library:
-```tsx
-import { render, screen } from '@testing-library/react';
-import { MyComponent } from './MyComponent';
+1. Use predefined test commands in the chat input:
+   - `test text artifact` - Creates a text document
+   - `test image artifact` - Creates an image
+   - `test sheet artifact` - Creates a spreadsheet
 
-describe('MyComponent', () => {
-  it('renders correctly', () => {
-    render(<MyComponent prop1="test" prop2={123} />);
-    expect(screen.getByText('test')).toBeInTheDocument();
-  });
-});
-```
+2. Test version control features:
+   - Edit artifacts to create multiple versions
+   - Navigate between versions using the UI controls
+   - Compare versions with diff mode
+   - Restore previous versions
+
+3. Test storage backends:
+   - API storage (default)
+   - Local storage (for documents with special prefixes)
 
 ### Building for Production
 
@@ -177,11 +297,39 @@ yarn start
    - Verify that mock service functions are being called
    - Ensure promise chains are properly handled
 
+4. **Artifact rendering issues**:
+   - Check that artifact kind is registered in artifactDefinitions
+   - Verify content format matches expected format for the artifact type
+   - Check local storage for document versions (if using local storage)
+
+5. **Version control problems**:
+   - Look for localStorage entries with keys starting with `local-document-`
+   - Check the JSON structure of stored documents
+   - Verify timestamp ordering for version navigation
+   - Console log versions during navigation and restoration
+
 ### Debugging Tools
 
 1. React Developer Tools browser extension
 2. Next.js built-in error overlay
 3. Browser console and network tab
+4. Local Storage inspector in browser developer tools
+
+## Performance Optimization
+
+When working with artifacts:
+
+1. **Memoize components**:
+   - Use React.memo for artifact content components
+   - Implement custom equality checks for complex props
+
+2. **Debounce expensive operations**:
+   - Use debouncing for content editing
+   - Consider throttling for real-time updates
+
+3. **Optimize version handling**:
+   - Be cautious with large document sizes
+   - Consider pagination for large version histories
 
 ## Contributing Guidelines
 

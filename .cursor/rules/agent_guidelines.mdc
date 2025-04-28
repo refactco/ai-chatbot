@@ -17,7 +17,9 @@ When approaching this project, consult documentation in the following order:
 4. **Specific Guides**: Only after understanding the overall architecture, consult specific guides:
    - `docs/API-INTEGRATION.md` for API-related tasks
    - `docs/ARTIFACT-SYSTEM.md` for artifact-related tasks
+   - `docs/VERSION-CONTROL-SYSTEM.md` for version control features
    - `docs/DEVELOPER-GUIDE.md` for development workflows
+   - `docs/MOCK-SERVICES.md` for mock API implementation
 
 ## Project Structure
 
@@ -26,6 +28,8 @@ The project follows this structure:
   - `/(auth)`: Authentication pages (login, register)
   - `/(chat)`: Chat application pages
 - `/components`: React components, organized by functionality
+- `/artifacts`: Artifact type implementations (text, image, sheet)
+- `/hooks`: Custom React hooks for state management
 - `/lib`: Utilities, services, and helper functions
 - `/docs`: Project documentation
 - `/public`: Static assets
@@ -52,7 +56,16 @@ When modifying code:
 4. **Artifact System**:
    - Artifacts are special content types (text, image, sheets)
    - Reference `docs/ARTIFACT-SYSTEM.md` when working with artifacts
-   - Artifact rendering is handled by specialized viewer components
+   - Artifact types are defined in `/artifacts/{type}/client.tsx`
+   - The main container is `components/artifact.tsx`
+   - Version control features are documented in `docs/VERSION-CONTROL-SYSTEM.md`
+   - Artifact has a dual-storage approach (API and localStorage)
+
+5. **Storage Patterns**:
+   - Documents can use API-based or localStorage backends
+   - Special document IDs (with prefixes like `local:`) use localStorage
+   - Version history is maintained consistently across both storage types
+   - Reference storage implementation in artifact component for details
 
 ## Troubleshooting Guide
 
@@ -73,6 +86,12 @@ When troubleshooting issues:
    - Check responsive behavior across breakpoints
    - Verify animation states and transitions
 
+4. **For Artifact System Issues**:
+   - Verify artifact type is registered in `artifactDefinitions`
+   - Check localStorage for document versions with prefix `local-document-`
+   - Inspect version history and navigation functionality
+   - Examine console logs for artifact operations
+
 ## Best Practices
 
 Follow these best practices when working with the codebase:
@@ -91,11 +110,17 @@ Follow these best practices when working with the codebase:
    - Use React Context API for global state
    - Use local component state for UI-specific state
    - Utilize custom hooks to encapsulate complex logic
+   - Use `useArtifact` hook for artifact state management
 
 4. **Code Style**:
    - Follow existing code formatting patterns
    - Use meaningful variable and function names
    - Add comments for complex logic but keep code self-documenting
+
+5. **Performance Optimization**:
+   - Use debouncing for expensive operations (like content editing)
+   - Implement custom equality checks for memoized components
+   - Be mindful of large document sizes in version history
 
 ## Implementation Tips
 
@@ -116,6 +141,18 @@ When implementing new features or fixing bugs:
    - Consider impact on mobile devices
    - Test with large message sets to ensure scalability
 
+4. **Artifact Modifications**:
+   - Follow the pluggable architecture pattern for new artifact types
+   - Ensure version control compatibility with any new features
+   - Test on both mobile and desktop layouts
+   - Verify both storage backends if modifying storage logic
+
+5. **Version Control Changes**:
+   - Ensure timestamp ordering is maintained for version history
+   - Test version navigation and restoration thoroughly
+   - Maintain compatibility with both storage systems
+   - Follow debouncing patterns for content saving
+
 ## Information Gathering
 
 When you need more information:
@@ -123,5 +160,7 @@ When you need more information:
 1. **Check Comprehensive Guide** (`docs/COMPREHENSIVE-GUIDE.md`) for detailed technical context
 2. **Look at related components** to understand patterns and relationships
 3. **Reference similar implementations** in the codebase for guidance
+4. **Examine version control system** for complex artifact interactions
+5. **Check localStorage in browser** for document versions during development
 
 Always prioritize understanding the existing architecture and patterns before making significant changes to ensure consistency and maintainability. 

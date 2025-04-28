@@ -16,7 +16,10 @@ App
 │       │   └── Message (multiple)
 │       ├── MultimodalInput
 │       └── Artifact
-│           └── ArtifactMessages
+│           ├── ArtifactMessages
+│           ├── ArtifactActions
+│           ├── VersionFooter (conditional)
+│           └── Specialized Content Viewers (based on artifact type)
 ```
 
 ## Message Components
@@ -126,15 +129,179 @@ The `SidebarProvider` manages the sidebar state:
 
 ## Artifact System
 
-The Artifact system consists of:
+The Artifact system consists of multiple interconnected components:
 
-- `Artifact` component: Main panel for artifact display
-- `ArtifactMessages` component: Specialized message display for artifacts
-- `DataStreamHandler` component: Manages streaming artifact data
+### Artifact Component (`components/artifact.tsx`)
 
-Data flow for artifacts:
-1. AI suggests artifact generation in response (via mock API)
-2. Artifact data is streamed as attachments to messages
-3. DataStreamHandler processes artifact deltas
-4. Artifact component renders appropriate viewer based on type
-5. User can interact with the artifact through the specialized interface 
+The main container component that:
+- Manages the artifact panel UI (split view on desktop, full screen on mobile)
+- Handles document fetching and version control
+- Coordinates between messages and content views
+- Transitions between artifact states with animations
+
+### ArtifactMessages Component (`components/artifact-messages.tsx`)
+
+A specialized message display that:
+- Shows conversation context related to the current artifact
+- Provides a message input specifically for the artifact context
+- Updates in real-time as new artifact-related messages arrive
+
+### Version Control Components
+
+The artifact system includes robust version control:
+
+1. **ArtifactActions** (`components/artifact-actions.tsx`):
+   - Provides toolbar controls for version navigation
+   - Allows switching between edit and diff modes
+   - Shows current version status
+
+2. **VersionFooter** (`components/version-footer.tsx`):
+   - Appears when viewing historical versions
+   - Provides version restoration controls
+   - Shows contextual information about the selected version
+
+### Artifact Type System
+
+Content display is handled through a pluggable architecture:
+
+```typescript
+export const artifactDefinitions = [textArtifact, imageArtifact, sheetArtifact];
+```
+
+Each artifact type implements:
+- Specialized content viewers/editors
+- Type-specific controls and interactions
+- Custom metadata handling
+
+### Storage System Integration
+
+The artifact component integrates with two storage systems:
+
+1. **API-Based Storage**:
+   - For production use with server persistence
+   - Uses SWR for data fetching and caching
+   - Handles API-based version creation and restoration
+
+2. **Local Storage System**:
+   - For development and special document types
+   - Uses browser localStorage for persistence
+   - Handles local version history with the same UI as API storage
+
+### Data Flow for Artifacts
+
+1. **Artifact Creation**:
+   - Chat receives a message with attachment having artifact URL
+   - Chat passes attachment to DataStreamHandler
+   - DataStreamHandler recognizes artifact type and updates artifact state
+   - Artifact component becomes visible with initial content
+
+2. **Content Editing**:
+   - User edits content in specialized editor
+   - Edits are debounced to prevent excessive version creation
+   - Changes are saved to appropriate storage system
+   - New version is created with timestamp
+
+3. **Version Navigation**:
+   - User navigates between versions using UI controls
+   - Version changes update content display
+   - Historical versions show restoration UI
+   - Diff mode allows comparison between versions
+
+4. **Artifact Interaction with Chat**:
+   - Messages related to artifact displayed in left panel
+   - New messages can be sent in context of artifact
+   - Artifact changes can trigger new chat interactions
+
+## Animation System
+
+The application uses Framer Motion for smooth animations:
+
+- Message appearances and transitions
+- Artifact panel opening/closing
+- Version history navigation
+- Loading and status indicators
+
+Animation is controlled with consistent patterns:
+
+```tsx
+<AnimatePresence>
+  {condition && (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+    >
+      {/* Component content */}
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+## Responsive Design
+
+Components adapt to different screen sizes:
+
+- Desktop: Full layout with sidebar and split artifact view
+- Tablet: Modified layout with collapsible sidebar
+- Mobile: Simplified layout with full-screen artifact view
+
+Responsive behavior is implemented using:
+- Tailwind CSS breakpoints (`md:`, `lg:`)
+- `useWindowSize` hook for dynamic adjustments
+- Conditional rendering for mobile layouts
+
+## Performance Optimization
+
+Key performance strategies:
+
+1. **Memoization**:
+   - React.memo for expensive components
+   - Custom equality checks for specific props
+   - useMemo for computed values
+
+2. **Debouncing**:
+   - Input handlers for typing
+   - Content saving for artifact edits
+   - Search and filter operations
+
+3. **Load Optimization**:
+   - Conditional fetching with SWR
+   - Optimistic UI updates
+   - Progressive loading indicators
+
+## Component Communication
+
+Components communicate through several patterns:
+
+1. **Prop Passing**:
+   - Direct parent-child communication
+   - Function callbacks for actions
+
+2. **Context API**:
+   - `SidebarProvider` for sidebar state
+   - `useArtifact` hook for artifact state
+
+3. **Custom Hooks**:
+   - `useChat` for message state
+   - `useScrollToBottom` for scroll behavior
+   - `useArtifact` for artifact management
+
+## Integration Testing Guidance
+
+For effective integration testing:
+
+1. **Mock API Triggers**:
+   - "test image artifact" - Creates image artifact
+   - "test text artifact" - Creates text document
+   - "test sheet artifact" - Creates spreadsheet
+
+2. **Component States**:
+   - Test artifact with streaming status
+   - Test version history navigation
+   - Test responsive layouts at breakpoints
+
+3. **User Flows**:
+   - Chat to artifact creation flow
+   - Artifact editing and version creation
+   - Version restoration process 

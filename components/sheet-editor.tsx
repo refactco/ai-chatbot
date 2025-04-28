@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState, useCallback } from 'react';
 import DataGrid, { textEditor } from 'react-data-grid';
 import { parse, unparse } from 'papaparse';
 import { useTheme } from 'next-themes';
@@ -10,7 +10,7 @@ import 'react-data-grid/lib/styles.css';
 
 type SheetEditorProps = {
   content: string;
-  saveContent: (content: string, isCurrentVersion: boolean) => void;
+  saveContent: (content: string, debounce: boolean) => void;
   status: string;
   isCurrentVersion: boolean;
   currentVersionIndex: number;
@@ -24,26 +24,45 @@ const PureSpreadsheetEditor = ({
   saveContent,
   status,
   isCurrentVersion,
+  currentVersionIndex,
 }: SheetEditorProps) => {
   const { theme } = useTheme();
+  const [lastSavedContent, setLastSavedContent] = useState(content);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('SpreadsheetEditor rendering with:', {
+      contentLength: content?.length,
+      isCurrentVersion,
+      currentVersionIndex,
+      status,
+    });
+  }, [content, isCurrentVersion, currentVersionIndex, status]);
 
   const parseData = useMemo(() => {
     if (!content) return Array(MIN_ROWS).fill(Array(MIN_COLS).fill(''));
-    const result = parse<string[]>(content, { skipEmptyLines: true });
 
-    const paddedData = result.data.map((row) => {
-      const paddedRow = [...row];
-      while (paddedRow.length < MIN_COLS) {
-        paddedRow.push('');
+    console.log('Parsing content of length:', content.length);
+    try {
+      const result = parse<string[]>(content, { skipEmptyLines: true });
+
+      const paddedData = result.data.map((row) => {
+        const paddedRow = [...row];
+        while (paddedRow.length < MIN_COLS) {
+          paddedRow.push('');
+        }
+        return paddedRow;
+      });
+
+      while (paddedData.length < MIN_ROWS) {
+        paddedData.push(Array(MIN_COLS).fill(''));
       }
-      return paddedRow;
-    });
 
-    while (paddedData.length < MIN_ROWS) {
-      paddedData.push(Array(MIN_COLS).fill(''));
+      return paddedData;
+    } catch (error) {
+      console.error('Error parsing CSV data:', error);
+      return Array(MIN_ROWS).fill(Array(MIN_COLS).fill(''));
     }
-
-    return paddedData;
   }, [content]);
 
   const columns = useMemo(() => {
@@ -90,54 +109,108 @@ const PureSpreadsheetEditor = ({
 
   const [localRows, setLocalRows] = useState(initialRows);
 
+  // Reset rows when content changes (e.g., version changes)
   useEffect(() => {
+    console.log('Content changed, resetting rows');
     setLocalRows(initialRows);
-  }, [initialRows]);
+    setLastSavedContent(content);
+  }, [initialRows, content]);
 
-  const generateCsv = (data: any[][]) => {
-    return unparse(data);
-  };
+  const generateCsv = useCallback((data: any[][]) => {
+    const csv = unparse(data);
+    console.log('Generated CSV of length:', csv.length);
+    return csv;
+  }, []);
 
-  const handleRowsChange = (newRows: any[]) => {
-    setLocalRows(newRows);
+  const handleRowsChange = useCallback(
+    (newRows: any[]) => {
+      if (!isCurrentVersion) {
+        console.log('Ignoring changes in view-only mode');
+        return;
+      }
 
-    const updatedData = newRows.map((row) => {
-      return columns.slice(1).map((col) => row[col.key] || '');
-    });
+      setLocalRows(newRows);
 
-    const newCsvContent = generateCsv(updatedData);
-    saveContent(newCsvContent, true);
-  };
+      const updatedData = newRows.map((row) => {
+        return columns.slice(1).map((col) => row[col.key] || '');
+      });
+
+      const newCsvContent = generateCsv(updatedData);
+
+      // Only save if content has actually changed
+      if (newCsvContent !== lastSavedContent) {
+        console.log('Content changed, saving...');
+        setLastSavedContent(newCsvContent);
+        saveContent(newCsvContent, true);
+      }
+    },
+    [columns, generateCsv, isCurrentVersion, lastSavedContent, saveContent],
+  );
+
+  // If not the current version, display a read-only view
+  const isReadOnly = !isCurrentVersion;
 
   return (
-    <DataGrid
-      className={theme === 'dark' ? 'rdg-dark' : 'rdg-light'}
-      columns={columns}
-      rows={localRows}
-      enableVirtualization
-      onRowsChange={handleRowsChange}
-      onCellClick={(args) => {
-        if (args.column.key !== 'rowNumber') {
-          args.selectCell(true);
-        }
-      }}
-      style={{ height: '100%' }}
-      defaultColumnOptions={{
-        resizable: true,
-        sortable: true,
-      }}
-    />
+    <div className="h-full w-full relative">
+      {isReadOnly && (
+        <div className="absolute top-0 right-0 z-10 bg-yellow-500 text-black px-2 py-1 text-xs rounded-bl m-1">
+          Read-only: Viewing version {currentVersionIndex}
+        </div>
+      )}
+      <DataGrid
+        className={theme === 'dark' ? 'rdg-dark' : 'rdg-light'}
+        columns={columns}
+        rows={localRows}
+        enableVirtualization
+        onRowsChange={isReadOnly ? undefined : handleRowsChange}
+        onCellClick={(args) => {
+          if (!isReadOnly && args.column.key !== 'rowNumber') {
+            args.selectCell(true);
+          }
+        }}
+        style={{ height: '100%' }}
+        defaultColumnOptions={{
+          resizable: true,
+          sortable: true,
+        }}
+      />
+    </div>
   );
 };
 
 function areEqual(prevProps: SheetEditorProps, nextProps: SheetEditorProps) {
-  return (
-    prevProps.currentVersionIndex === nextProps.currentVersionIndex &&
-    prevProps.isCurrentVersion === nextProps.isCurrentVersion &&
-    !(prevProps.status === 'streaming' && nextProps.status === 'streaming') &&
-    prevProps.content === nextProps.content &&
-    prevProps.saveContent === nextProps.saveContent
-  );
+  if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {
+    console.log(
+      'Version changed from',
+      prevProps.currentVersionIndex,
+      'to',
+      nextProps.currentVersionIndex,
+    );
+    return false;
+  }
+  if (prevProps.isCurrentVersion !== nextProps.isCurrentVersion) {
+    console.log(
+      'isCurrentVersion changed from',
+      prevProps.isCurrentVersion,
+      'to',
+      nextProps.isCurrentVersion,
+    );
+    return false;
+  }
+  if (prevProps.status !== nextProps.status) {
+    console.log(
+      'Status changed from',
+      prevProps.status,
+      'to',
+      nextProps.status,
+    );
+    return false;
+  }
+  if (prevProps.content !== nextProps.content) {
+    console.log('Content changed');
+    return false;
+  }
+  return true;
 }
 
 export const SpreadsheetEditor = memo(PureSpreadsheetEditor, areEqual);

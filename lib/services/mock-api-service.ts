@@ -37,9 +37,26 @@ export interface StreamResponseOptions {
   onError: (error: Error) => void;
 }
 
-// Sample artifact content for testing
-const SAMPLE_IMAGE_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAnElEQVR42u3RAQ0AAAgDoM/0qQFrHN4Egmh3pgkCQIAAAQJEgAABAgQIECBAgAABAgQIECBAgAABAgQIECBABAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQAQIECBAgAABAgQIECBAgAABAgQIEA+xMnAAD0KOdQ4AAAAASUVORK5CYII=';
+// Placeholder image URLs for testing - using public placeholder services
+const PLACEHOLDER_IMAGE_URLS = [
+  'https://placehold.co/600x400/3498db/ffffff?text=AI+Generated+Image',
+  'https://placehold.co/600x400/e74c3c/ffffff?text=AI+Generated+Chart',
+  'https://placehold.co/600x400/27ae60/ffffff?text=AI+Generated+Visualization',
+  'https://placehold.co/600x400/f39c12/ffffff?text=AI+Generated+Graph',
+  'https://placehold.co/600x400/9b59b6/ffffff?text=AI+Generated+Diagram',
+];
+
+// Get a random placeholder image URL
+const getRandomPlaceholderImageUrl = () => {
+  const randomIndex = Math.floor(Math.random() * PLACEHOLDER_IMAGE_URLS.length);
+  return PLACEHOLDER_IMAGE_URLS[randomIndex];
+};
+
+// Constants for consistent document IDs
+const DOCUMENT_IDS = {
+  TEXT: 'text:article',
+  SHEET: 'sheet:table-data',
+};
 
 const SAMPLE_TEXT = `# Sample Text Document
 
@@ -134,248 +151,131 @@ export const mockApiService = {
 
     try {
       // Simulate API request delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Generate a mock response based on the input
-      let response = '';
-      let reasoning = '';
-
-      // Handle special test phrases for artifacts
-      const isTestImageRequest = message
-        .toLowerCase()
-        .includes('test image artifact');
-      const isTestTextRequest = message
-        .toLowerCase()
-        .includes('test text artifact');
-      const isTestSheetRequest = message
-        .toLowerCase()
-        .includes('test sheet artifact');
-
-      // New direct message type triggers - check for exact commands
-      const isImageMessage = message.toLowerCase() === '!image';
-      const isSheetMessage = message.toLowerCase() === '!sheet';
-      const isArticleMessage = message.toLowerCase() === '!article';
-      const isReasoningMessage = message.toLowerCase() === '!reasoning';
-
-      // Keep the regular text analysis for non-command messages
-      const hasImageWord =
-        message.toLowerCase().includes('image') &&
-        !isImageMessage &&
-        !isTestImageRequest;
-      const hasDocumentWord =
-        message.toLowerCase().includes('document') &&
-        !isArticleMessage &&
-        !isTestTextRequest;
-      const hasWeatherWord = message.toLowerCase().includes('weather');
-      const hasGreeting =
-        message.toLowerCase().includes('hello') ||
-        message.toLowerCase().includes('hi');
-
-      if (isImageMessage) {
-        response = "Here's an image as requested:";
-        reasoning =
-          'User requested an image message. Displaying an image in the chat.';
-      } else if (isSheetMessage) {
-        response = "Here's a data table as requested:";
-        reasoning =
-          'User requested a sheet/table message. Displaying tabular data in the chat.';
-      } else if (isArticleMessage) {
-        response = "Here's the article text as requested:";
-        reasoning =
-          'User requested an article/text message. Displaying formatted text in the chat.';
-      } else if (isReasoningMessage) {
-        response = "Here's my reasoning process:";
-        reasoning =
-          'User requested to see a reasoning message directly. Displaying reasoning in the chat.';
-      } else if (isTestImageRequest) {
-        response = "I'll create a test image artifact for you to view.";
-        reasoning =
-          "User requested to test the image artifact viewer. I'll create a sample image artifact.";
-      } else if (isTestTextRequest) {
-        response = "I'll create a test text document for you to edit.";
-        reasoning =
-          "User requested to test the text artifact viewer. I'll create a sample text document.";
-      } else if (isTestSheetRequest) {
-        response = "I'll create a test spreadsheet for you to view and edit.";
-        reasoning =
-          "User requested to test the sheet artifact viewer. I'll create a sample spreadsheet.";
-      } else if (hasGreeting) {
-        response =
-          "Hello there! I'm your AI assistant. How can I help you today?";
-        reasoning =
-          "User sent a greeting, so I'll respond with a friendly welcome message and offer assistance.";
-      } else if (hasWeatherWord) {
-        response =
-          "I don't have real-time weather data in this mock implementation, but I can tell you that it's a lovely day in the virtual world!";
-        reasoning =
-          "User asked about weather data. In a real implementation, I would access a weather API. For now, I'll explain this limitation.";
-      } else if (hasImageWord) {
-        response =
-          "I see you're interested in images. In the full implementation, I'll be able to process and generate images based on your requests.";
-        reasoning =
-          "User mentioned 'image', indicating interest in image processing or generation. I'll explain the capabilities that would be available in a full implementation.";
-      } else if (hasDocumentWord) {
-        response =
-          "I see you're working with documents. I'll be able to analyze and work with your documents in the full implementation.";
-        reasoning =
-          "User mentioned 'document', suggesting they want to work with document data. I'll inform them about document analysis capabilities in the full version.";
-      } else {
-        response = `Thank you for your message: "${message}". This is a mock response from the AI agent. In the real implementation, you'll get responses based on your backend's AI model.`;
-        reasoning = `Received a general message: "${message}". Since this is a mock implementation, I'll provide a generic response explaining that this is a placeholder.`;
-      }
-
-      // First, create and send a reasoning message
-      const reasoningMessage: ChatMessage = {
-        id: generateUUID(),
-        content: '',
-        role: 'system',
-        createdAt: new Date(),
+      // Generate a deterministic image URL based on the message content
+      // This ensures the same message always gets the same image
+      const getImageUrlForMessage = (message: string) => {
+        // Simple hash function to get a deterministic index
+        const hashStr = message.toLowerCase().trim();
+        let hash = 0;
+        for (let i = 0; i < hashStr.length; i++) {
+          hash = (hash << 5) - hash + hashStr.charCodeAt(i);
+        }
+        // Use absolute value and mod for consistent index
+        const index = Math.abs(hash) % PLACEHOLDER_IMAGE_URLS.length;
+        return PLACEHOLDER_IMAGE_URLS[index];
       };
 
-      // Stream the reasoning first
-      const reasoningChunks = reasoning.split(/(?<=[.!?])\s+/);
-      let accumulatedReasoning = '';
+      // If the message contains specific keywords, return appropriate artifacts
+      if (message.toLowerCase().includes('image')) {
+        // Create image attachment with consistent URL
+        const imageAttachment = {
+          type: 'image',
+          url: getImageUrlForMessage(message),
+        };
 
-      for (let i = 0; i < reasoningChunks.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        accumulatedReasoning = `${accumulatedReasoning}${reasoningChunks[i]} `;
-        reasoningMessage.content = accumulatedReasoning;
-        onChunk(reasoningMessage);
+        const assistantMessage: ChatMessage = {
+          id: generateUUID(),
+          content: 'Here is your generated image.',
+          role: 'assistant',
+          createdAt: new Date(),
+          attachments: [imageAttachment],
+        };
+
+        onChunk(assistantMessage);
+        onFinish(assistantMessage);
+        return;
       }
 
-      // Create the assistant message
+      // Handle sheet artifact request
+      if (
+        message.toLowerCase().includes('sheet') ||
+        message.toLowerCase().includes('table')
+      ) {
+        // Create sheet attachment with consistent ID format
+        const sheetAttachment = {
+          type: 'sheet',
+          url: DOCUMENT_IDS.SHEET,
+          content: SAMPLE_SHEET,
+        };
+
+        const assistantMessage: ChatMessage = {
+          id: generateUUID(),
+          content: 'Here is your requested data table.',
+          role: 'assistant',
+          createdAt: new Date(),
+          attachments: [sheetAttachment],
+        };
+
+        onChunk(assistantMessage);
+        onFinish(assistantMessage);
+        return;
+      }
+
+      // Handle text/document artifact request
+      if (
+        message.toLowerCase().includes('text') ||
+        message.toLowerCase().includes('document')
+      ) {
+        // Create text attachment with consistent ID format - identical pattern to sheet
+        const textAttachment = {
+          type: 'text',
+          url: DOCUMENT_IDS.TEXT,
+          content: SAMPLE_TEXT,
+        };
+
+        const assistantMessage: ChatMessage = {
+          id: generateUUID(),
+          content: 'Here is your requested text document.',
+          role: 'assistant',
+          createdAt: new Date(),
+          attachments: [textAttachment],
+        };
+
+        onChunk(assistantMessage);
+        onFinish(assistantMessage);
+        return;
+      }
+
+      // Add reasoning to messages when the keyword is present
+      if (
+        message.toLowerCase().includes('reason') ||
+        message.toLowerCase().includes('reasoning')
+      ) {
+        const reasoningContent = `I need to respond to the user message "${message}". 
+
+Let me analyze this step by step:
+1. First, I should understand the user's intent
+2. Then, I need to gather relevant information
+3. Finally, I will formulate a helpful response
+
+Based on my analysis, I believe the user is looking for information about reasoning, so I should explain how reasoning works in this chatbot.`;
+
+        const assistantMessage: ChatMessage = {
+          id: generateUUID(),
+          content:
+            'I understand you want to see the reasoning component. I have included my reasoning process for this response, which you can see in the reasoning section below.',
+          role: 'assistant',
+          createdAt: new Date(),
+          reasoning: reasoningContent,
+        };
+
+        onChunk(assistantMessage);
+        onFinish(assistantMessage);
+        return;
+      }
+
+      // Default response for all other messages
       const assistantMessage: ChatMessage = {
         id: generateUUID(),
-        content: '',
+        content: 'This is a mock AI response.',
         role: 'assistant',
         createdAt: new Date(),
       };
-
-      // Short pause between reasoning and response
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Now stream the assistant response
-      const sentences = response.split(/(?<=[.!?])\s+/);
-      let accumulatedResponse = '';
-
-      for (let i = 0; i < sentences.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        accumulatedResponse = `${accumulatedResponse}${sentences[i]} `;
-        assistantMessage.content = accumulatedResponse;
-        onChunk(assistantMessage);
-      }
-
-      // Save both messages to chat history
-      if (chatHistory[currentChatId]) {
-        chatHistory[currentChatId].messages.push(reasoningMessage);
-        chatHistory[currentChatId].messages.push(assistantMessage);
-      }
-
-      // Add artifacts if requested
-      if (isTestImageRequest || isTestTextRequest || isTestSheetRequest) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        const artifactId = generateUUID();
-
-        if (isTestImageRequest) {
-          // Send an image artifact
-          onChunk({
-            id: generateUUID(),
-            role: 'assistant',
-            content: '',
-            createdAt: new Date(),
-            reasoning: 'Generating image artifact',
-            attachments: [
-              {
-                type: 'image-delta',
-                url: `artifact:${artifactId}`,
-                content: SAMPLE_IMAGE_BASE64,
-              },
-            ],
-          });
-        } else if (isTestTextRequest) {
-          // Send a text artifact
-          onChunk({
-            id: generateUUID(),
-            role: 'assistant',
-            content: '',
-            createdAt: new Date(),
-            reasoning: 'Generating text artifact',
-            attachments: [
-              {
-                type: 'text-delta',
-                url: `artifact:${artifactId}`,
-                content: SAMPLE_TEXT,
-              },
-            ],
-          });
-        } else if (isTestSheetRequest) {
-          // Send a sheet artifact
-          onChunk({
-            id: generateUUID(),
-            role: 'assistant',
-            content: '',
-            createdAt: new Date(),
-            reasoning: 'Generating sheet artifact',
-            attachments: [
-              {
-                type: 'sheet-delta',
-                url: `artifact:${artifactId}`,
-                content: SAMPLE_SHEET,
-              },
-            ],
-          });
-        }
-      }
-
-      // Add direct message content types
-      if (
-        isImageMessage ||
-        isSheetMessage ||
-        isArticleMessage ||
-        isReasoningMessage
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (isImageMessage) {
-          // Add image to the assistant message
-          assistantMessage.attachments = [
-            {
-              type: 'image',
-              url: `data:image/png;base64,${SAMPLE_IMAGE_BASE64}`,
-              content: SAMPLE_IMAGE_BASE64,
-            },
-          ];
-        } else if (isSheetMessage) {
-          // Add sheet/table data to the assistant message
-          assistantMessage.attachments = [
-            {
-              type: 'sheet',
-              url: 'sheet:table-data',
-              content: SAMPLE_SHEET,
-            },
-          ];
-        } else if (isArticleMessage) {
-          // Add article/text to the assistant message
-          assistantMessage.attachments = [
-            {
-              type: 'text',
-              url: 'text:article',
-              content: SAMPLE_TEXT,
-            },
-          ];
-        } else if (isReasoningMessage) {
-          // For reasoning, we'll directly add it to the assistant message
-          // and mark it specially for the UI to render it differently
-          assistantMessage.reasoning =
-            "This is a detailed reasoning process that explains my thought process step by step. I'm analyzing the request, considering relevant information, and providing a structured explanation of how I arrived at my response.";
-        }
-      }
-
-      // Signal completion with the assistant message
+      onChunk(assistantMessage);
       onFinish(assistantMessage);
     } catch (error) {
-      console.error('Error in mock API stream:', error);
       onError(
         error instanceof Error
           ? error

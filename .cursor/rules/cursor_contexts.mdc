@@ -16,6 +16,8 @@ When asking Cursor AI for help, include these contexts for optimal results:
    - For general questions, include `docs/PROJECT-OVERVIEW.md`
    - For component-specific questions, include `docs/COMPONENT-ARCHITECTURE.md`
    - For in-depth technical details, include `docs/COMPREHENSIVE-GUIDE.md`
+   - For artifact system, include `docs/ARTIFACT-SYSTEM.md`
+   - For version control features, include `docs/VERSION-CONTROL-SYSTEM.md`
 
 2. **Related Code Files**
    - Include the primary file you're working with
@@ -26,6 +28,7 @@ When asking Cursor AI for help, include these contexts for optimal results:
 3. **Type Definitions**
    - Always include `lib/ai/types.ts` when working with message-related code
    - Include interface definitions relevant to your task
+   - Include `lib/schema.ts` when working with document-related features
 
 ## Context Templates
 
@@ -100,15 +103,39 @@ For specific areas of the application, include these contexts:
 - lib/services/api-service.ts
 - lib/ai/providers.ts
 - docs/API-INTEGRATION.md
+- docs/MOCK-SERVICES.md
 ```
 
 ### Artifact System
 
 ```
 - components/artifact.tsx
-- components/data-stream-handler.tsx
 - components/artifact-messages.tsx
+- components/artifact-actions.tsx
+- components/version-footer.tsx
+- artifacts/text/client.tsx (or relevant artifact type)
+- hooks/use-artifact.ts
 - docs/ARTIFACT-SYSTEM.md
+- docs/VERSION-CONTROL-SYSTEM.md
+```
+
+### Version Control
+
+```
+- components/artifact.tsx
+- components/version-footer.tsx
+- components/artifact-actions.tsx
+- lib/schema.ts
+- docs/VERSION-CONTROL-SYSTEM.md
+```
+
+### Storage Implementation
+
+```
+- components/artifact.tsx (handleContentChange and related functions)
+- lib/services/api-service.ts
+- lib/schema.ts
+- docs/ARTIFACT-SYSTEM.md (Storage Systems section)
 ```
 
 ## Best Practices for Providing Context
@@ -122,16 +149,39 @@ For specific areas of the application, include these contexts:
    - Mention current state management approach
    - Note any specific TypeScript types in use
    - Reference similar implementations if they exist
+   - Specify which storage backend is relevant (API or localStorage)
 
 3. **Specify Constraints**
    - Mention dependencies that cannot be changed
    - Note performance requirements
    - Highlight backward compatibility needs
+   - Specify mobile vs. desktop considerations
 
 4. **For Complex Changes**
    - Include both high-level documentation and specific code files
    - Mention related components that might be affected
    - Provide step-by-step breakdown of the planned changes
+   - Include version control implications for artifact modifications
+
+## When Working with Artifact Features
+
+When implementing or debugging artifact-related features:
+
+1. **Storage Context**
+   - Specify which storage backend is being used (API or localStorage)
+   - Include the document ID format and any special prefixes
+   - Note local storage keys for document version inspection
+
+2. **Version Control Context**
+   - Provide version navigation requirements
+   - Specify how version restoration should work
+   - Include information about edit/diff mode requirements
+   - Note timestamp-based ordering considerations
+
+3. **UI Requirements**
+   - Clarify mobile vs. desktop layout needs
+   - Specify animation and transition details
+   - Include responsive design considerations
 
 ## When To Update Comprehensive Guide
 
@@ -142,5 +192,7 @@ After making significant changes or learning new details about the project, upda
 3. Performance optimizations implemented
 4. Edge cases and their handling
 5. API integration specifics
+6. Storage implementation details
+7. Version control edge cases and solutions
 
 This ensures that the guide remains a living document that accurately reflects the current state and understanding of the project. 

@@ -30,6 +30,7 @@ The system currently supports three types of artifacts:
    - Main container for the artifact panel
    - Controls visibility and state
    - Integrates different artifact viewers
+   - Manages version history and document storage
 
 2. **DataStreamHandler** (`components/data-stream-handler.tsx`):
    - Manages streaming data for artifacts
@@ -39,10 +40,12 @@ The system currently supports three types of artifacts:
 3. **ArtifactMessages** (`components/artifact-messages.tsx`):
    - Specialized message display for artifacts
    - Shows interactions related to the current artifact
+   - Provides context for artifact creation and modifications
 
-4. **PreviewAttachment** (`components/preview-attachment.tsx`):
-   - Renders attachment previews within messages
-   - Supports different attachment types
+4. **VersionFooter** (`components/version-footer.tsx`):
+   - Manages version history interface
+   - Allows navigation between document versions
+   - Provides version restoration functionality
 
 ### Attachment Structure
 
@@ -74,29 +77,76 @@ interface Attachment {
 3. Changes can be sent back to the AI as messages
 4. AI can respond to changes or provide further content
 
-## Mock Implementation
+## Document Storage Systems
 
-The current implementation uses `mockApiService.ts` to simulate artifact generation:
+The artifact system supports two storage strategies:
 
-```typescript
-// Example from mock-api-service.ts
-if (isTestImageRequest) {
-  onChunk({
-    id: generateUUID(),
-    role: 'assistant',
-    content: '',
-    createdAt: new Date(),
-    reasoning: 'Generating image artifact',
-    attachments: [
-      {
-        type: 'image-delta',
-        url: `artifact:${artifactId}`,
-        content: SAMPLE_IMAGE_BASE64,
-      },
-    ],
-  });
-}
-```
+### 1. API-Based Document Storage
+
+For production environments, documents are stored via API:
+- Documents are fetched from `/api/document?id=${documentId}`
+- Updates are posted to the same endpoint
+- Versions are managed on the server side
+- Authentication and access control handled by the API
+
+### 2. Local Document Storage
+
+For development or special document types:
+- Documents with `local:` prefix or special URIs (http://, text:, sheet:) use local storage
+- Document history is stored in browser localStorage
+- Each edit creates a new version with timestamp
+- Versions can be navigated, compared, and restored
+- Key format: `local-document-${documentId}`
+
+## Version Control System
+
+The artifact system now includes a robust version control system:
+
+1. **Version Creation**:
+   - Each edit automatically creates a new version
+   - Versions include timestamps and content changes
+   - Debounced saving prevents excessive version creation
+
+2. **Version Navigation**:
+   - Users can move between versions using toolbar controls
+   - Navigation includes previous, next, and latest version options
+   - Current version status is clearly indicated
+
+3. **Version Comparison**:
+   - 'diff' mode allows comparing changes between versions
+   - The current implementation focuses on showing different versions
+   - Future updates will include detailed difference highlighting
+
+4. **Version Restoration**:
+   - Users can restore previous versions
+   - Restoration works for both API and local storage documents
+   - After restoration, the system returns to edit mode with the restored content
+
+## User Interface Components
+
+### Split Panel Layout
+
+On desktop devices, the artifact view uses a split panel layout:
+- Left panel (400px): Shows messages related to the artifact
+- Right panel (remaining width): Displays the artifact content
+- Both panels scroll independently
+
+On mobile devices, the interface adapts to show only the artifact content for better usability.
+
+### Animation and Transitions
+
+The artifact interface includes smooth animations for:
+- Opening and closing the artifact panel
+- Transitioning between versions
+- Showing/hiding the version footer
+- Indicating saving status
+
+### Responsive Design
+
+The UI adjusts based on device size:
+- Desktop: Split panel with messages and content
+- Mobile: Full-screen artifact view with optimized controls
+- Adaptive sizing based on window dimensions
 
 ## Testing Artifacts
 
@@ -106,44 +156,32 @@ Special commands trigger artifact generation in the mock implementation:
 - `test text artifact`: Creates a text document
 - `test sheet artifact`: Produces a spreadsheet
 
-## Artifact Viewers
-
-Each artifact type has a specialized viewer component:
-
-### Text Artifact Viewer
-
-- Provides a Markdown editor for text content
-- Supports formatting and structure
-- Allows real-time editing
-
-### Image Artifact Viewer
-
-- Displays images with controls
-- Supports zooming and navigation
-- Provides download and sharing options
-
-### Sheet Artifact Viewer
-
-- Renders tabular data in a grid
-- Supports basic data operations
-- Allows CSV export
-
 ## Integration with Real Backend
 
 When implementing with a real backend:
 
 1. Replace sample content generation with actual AI-generated content
 2. Implement proper artifact storage (S3, database, etc.)
-3. Add version control for artifacts
+3. Leverage the existing version control system
 4. Implement authentication for artifact access
 5. Add collaboration features for shared artifacts
+
+## Recent Improvements
+
+The artifact system has been recently enhanced with:
+
+1. **Unified Storage Handling**: Consistent approach for both API and local storage
+2. **Improved Version History**: Better UI for navigating versions
+3. **Performance Optimizations**: Debounced content saving and memoized components
+4. **Visual Feedback**: Clear indicators for saving status and version information
+5. **Mobile Responsiveness**: Optimized experience across device sizes
 
 ## Future Enhancements
 
 Planned features for the artifact system:
 
-1. **Version History**: Track changes to artifacts over time
-2. **Collaborative Editing**: Allow multiple users to work on artifacts
-3. **Advanced Artifact Types**: Support for more specialized content types
-4. **Export Options**: Additional export formats for artifacts
-5. **Integration with External Tools**: Connect to third-party services 
+1. **Collaborative Editing**: Allow multiple users to work on artifacts simultaneously
+2. **Enhanced Diff Visualization**: Better visualization of changes between versions
+3. **Advanced Export Options**: Additional export formats for artifacts
+4. **Integration with External Tools**: Connect to third-party services
+5. **Offline Support**: Improved capabilities when working without network connection 

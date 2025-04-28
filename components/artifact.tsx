@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useMemo,
 } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
@@ -93,15 +94,116 @@ function PureArtifact({
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
 
+  // Handle special document IDs with the 'local:' prefix
+  const actualDocumentId = useMemo(() => {
+    if (artifact.documentId?.startsWith('local:')) {
+      // Extract the original ID without the 'local:' prefix
+      return artifact.documentId.substring(6);
+    }
+    return artifact.documentId;
+  }, [artifact.documentId]);
+
+  // We need to handle all types of artifacts consistently for version history to work
+  // For special document IDs, we'll use the content directly from artifact rather than API
+  const shouldFetchDocument = actualDocumentId && actualDocumentId !== 'init';
+
+  // For local resources, don't attempt API calls, but create local document structures
+  const useLocalDocument =
+    shouldFetchDocument &&
+    (actualDocumentId.startsWith('http') ||
+      actualDocumentId.includes('placehold.co') ||
+      actualDocumentId.startsWith('text:') ||
+      actualDocumentId.startsWith('sheet:'));
+
+  // Get local document versions from localStorage
+  const localStorageKey = useMemo(
+    () => `local-document-${actualDocumentId}`,
+    [actualDocumentId],
+  );
+
+  // Load document versions from localStorage on first render
+  const loadLocalDocuments = useCallback(() => {
+    if (useLocalDocument) {
+      try {
+        const storedData = localStorage.getItem(localStorageKey);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData) as Document[];
+          return parsedData;
+        }
+      } catch (error) {
+        console.error('Error loading local documents:', error);
+      }
+    }
+
+    // If no stored data, create initial version with current content
+    if (useLocalDocument && artifact.content) {
+      const initialDocument = {
+        id: actualDocumentId,
+        kind: artifact.kind as ArtifactKind,
+        title: artifact.title,
+        content: artifact.content,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: 'local-user',
+      };
+      return [initialDocument];
+    }
+
+    return undefined;
+  }, [
+    useLocalDocument,
+    localStorageKey,
+    actualDocumentId,
+    artifact.kind,
+    artifact.title,
+    artifact.content,
+  ]);
+
+  // Create a local document array for special document types
+  const [localDocuments, setLocalDocuments] = useState<Document[] | undefined>(
+    loadLocalDocuments,
+  );
+
+  // Save local documents to localStorage when they change
+  useEffect(() => {
+    if (useLocalDocument && localDocuments) {
+      try {
+        localStorage.setItem(localStorageKey, JSON.stringify(localDocuments));
+      } catch (error) {
+        console.error('Error saving local documents:', error);
+      }
+    }
+  }, [useLocalDocument, localDocuments, localStorageKey]);
+
+  // Only fetch from API for non-local documents
   const {
-    data: documents,
+    data: apiDocuments,
     isLoading: isDocumentsFetching,
     mutate: mutateDocuments,
   } = useSWR<Array<Document>>(
-    artifact.documentId !== 'init' && artifact.status !== 'streaming'
-      ? `/api/document?id=${artifact.documentId}`
+    shouldFetchDocument && !useLocalDocument
+      ? `/api/document?id=${actualDocumentId}`
       : null,
     fetcher,
+  );
+
+  // Use either API documents or local documents
+  const documents = useLocalDocument ? localDocuments : apiDocuments;
+
+  // Custom mutate function that works for both API and local documents
+  const mutateDocumentsWrapper = useCallback(
+    (
+      updaterFn?: (current: Document[] | undefined) => Document[] | undefined,
+    ) => {
+      if (useLocalDocument) {
+        if (typeof updaterFn === 'function') {
+          setLocalDocuments((current) => updaterFn(current));
+        }
+      } else {
+        mutateDocuments(updaterFn);
+      }
+    },
+    [useLocalDocument, mutateDocuments],
   );
 
   const [mode, setMode] = useState<'edit' | 'diff'>('edit');
@@ -110,6 +212,7 @@ function PureArtifact({
 
   const { open: isSidebarOpen } = useSidebar();
 
+  // Update current document when documents change
   useEffect(() => {
     if (documents && documents.length > 0) {
       const mostRecentDocument = documents.at(-1);
@@ -125,9 +228,12 @@ function PureArtifact({
     }
   }, [documents, setArtifact]);
 
+  // No need for this effect with the unified mutate function
   useEffect(() => {
-    mutateDocuments();
-  }, [artifact.status, mutateDocuments]);
+    if (!useLocalDocument) {
+      mutateDocuments();
+    }
+  }, [artifact.status, mutateDocuments, useLocalDocument]);
 
   const { mutate } = useSWRConfig();
   const [isContentDirty, setIsContentDirty] = useState(false);
@@ -136,61 +242,117 @@ function PureArtifact({
     (updatedContent: string) => {
       if (!artifact) return;
 
-      mutate<Array<Document>>(
-        `/api/document?id=${artifact.documentId}`,
-        async (currentDocuments) => {
+      if (useLocalDocument) {
+        // For local documents, create a new version directly
+        setIsContentDirty(true);
+
+        // Add a new version to local documents
+        const currentTime = new Date();
+        setLocalDocuments((currentDocuments) => {
           if (!currentDocuments) return undefined;
 
-          const currentDocument = currentDocuments.at(-1);
+          const newDocument = {
+            id: actualDocumentId,
+            kind: artifact.kind as ArtifactKind,
+            title: artifact.title,
+            content: updatedContent,
+            createdAt: currentTime,
+            updatedAt: currentTime,
+            userId: 'local-user',
+          };
 
-          if (!currentDocument || !currentDocument.content) {
+          // Clear dirty flag after creating new version with a longer delay for visibility
+          setTimeout(() => {
+            console.log('Clearing dirty flag for local document');
             setIsContentDirty(false);
-            return currentDocuments;
-          }
+            setDocument(newDocument); // Set as current document so timestamp updates
+          }, 1000);
 
-          if (currentDocument.content !== updatedContent) {
-            await fetch(`/api/document?id=${artifact.documentId}`, {
-              method: 'POST',
-              body: JSON.stringify({
-                title: artifact.title,
+          // Log for debugging
+          console.log('Created new version:', newDocument);
+          console.log(
+            'Total versions:',
+            [...currentDocuments, newDocument].length,
+          );
+
+          return [...currentDocuments, newDocument];
+        });
+
+        // Update the current content in the artifact
+        setArtifact((currentArtifact) => ({
+          ...currentArtifact,
+          content: updatedContent,
+        }));
+      } else {
+        // For API documents, use the existing API-based mutation
+        mutate<Array<Document>>(
+          `/api/document?id=${artifact.documentId}`,
+          async (currentDocuments) => {
+            if (!currentDocuments) return undefined;
+
+            const currentDocument = currentDocuments.at(-1);
+
+            if (!currentDocument || !currentDocument.content) {
+              setIsContentDirty(false);
+              return currentDocuments;
+            }
+
+            if (currentDocument.content !== updatedContent) {
+              await fetch(`/api/document?id=${artifact.documentId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                  title: artifact.title,
+                  content: updatedContent,
+                  kind: artifact.kind,
+                }),
+              });
+
+              setIsContentDirty(false);
+
+              const newDocument = {
+                ...currentDocument,
                 content: updatedContent,
-                kind: artifact.kind,
-              }),
-            });
+                createdAt: new Date(),
+              };
 
-            setIsContentDirty(false);
-
-            const newDocument = {
-              ...currentDocument,
-              content: updatedContent,
-              createdAt: new Date(),
-            };
-
-            return [...currentDocuments, newDocument];
-          }
-          return currentDocuments;
-        },
-        { revalidate: false },
-      );
+              return [...currentDocuments, newDocument];
+            }
+            return currentDocuments;
+          },
+          { revalidate: false },
+        );
+      }
     },
-    [artifact, mutate],
+    [
+      artifact,
+      mutate,
+      useLocalDocument,
+      actualDocumentId,
+      setArtifact,
+      setLocalDocuments,
+    ],
   );
 
   const debouncedHandleContentChange = useDebounceCallback(
     handleContentChange,
-    2000,
+    1000, // Reduced debounce time for more immediate feedback
   );
 
   const saveContent = useCallback(
     (updatedContent: string, debounce: boolean) => {
-      if (document && updatedContent !== document.content) {
-        setIsContentDirty(true);
+      // Always set dirty flag immediately to provide visual feedback
+      setIsContentDirty(true);
+      console.log('Content is dirty, saving...');
 
+      if (document && updatedContent !== document.content) {
         if (debounce) {
           debouncedHandleContentChange(updatedContent);
         } else {
           handleContentChange(updatedContent);
         }
+      } else {
+        // If no actual change, clear dirty flag after a short delay
+        setTimeout(() => setIsContentDirty(false), 500);
       }
     },
     [document, debouncedHandleContentChange, handleContentChange],

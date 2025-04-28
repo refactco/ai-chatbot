@@ -21,6 +21,13 @@ const mockSession = {
 
 export default function Page() {
   const params = useParams();
+  if (!params?.id) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        Invalid chat ID
+      </div>
+    );
+  }
   const id = params.id as string;
 
   const [chat, setChat] = useState<any>(null);
@@ -36,6 +43,7 @@ export default function Page() {
         setMessages(chatData.messages);
       } catch (error) {
         console.error('Error fetching chat data:', error);
+        setChat(null); // Explicitly set chat to null on error
       } finally {
         setLoading(false);
       }

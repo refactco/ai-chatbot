@@ -1,4 +1,4 @@
-import { mockApiService } from '../services/mock-api-service';
+import { apiService } from '../services/api-service';
 
 // Export a single AI provider implementation
 export const provider = {
@@ -27,9 +27,8 @@ export const provider = {
             let streamController: any = null;
 
             // Start streaming the response
-            mockApiService.streamResponse(
+            apiService.streamResponse(
               lastUserMessage.content,
-              options.attachments || [],
               {
                 onChunk: (chunk) => {
                   if (streamController) {
@@ -61,6 +60,8 @@ export const provider = {
                   }
                 },
               },
+              undefined,
+              options.attachments || [],
             );
 
             return {
@@ -99,9 +100,8 @@ export const provider = {
           return new Promise((resolve, reject) => {
             let fullResponse = '';
 
-            mockApiService.streamResponse(
+            apiService.streamResponse(
               lastUserMessage.content,
-              options.attachments || [],
               {
                 onChunk: (chunk) => {
                   fullResponse += chunk;
@@ -113,6 +113,8 @@ export const provider = {
                   reject(error);
                 },
               },
+              undefined,
+              options.attachments || [],
             );
           });
         },

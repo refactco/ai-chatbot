@@ -7,12 +7,14 @@ import { PencilEditIcon, SparklesIcon, UserIcon, BrainIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
+import { DocumentPreview } from './document-preview';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import type { UseChatHelpers } from '@/lib/ai/types';
+import { MessageReasoning } from './message-reasoning';
 
 const PurePreviewMessage = ({
   chatId,
@@ -74,25 +76,32 @@ const PurePreviewMessage = ({
           )}
 
           <div className="flex flex-col gap-4 w-full">
+            {/* Handle user-uploaded attachments */}
             {message.attachments && (
               <div
                 data-testid={`message-attachments`}
-                className="flex flex-col justify-end gap-3"
+                className="flex flex-row justify-end gap-2"
               >
-                {message.attachments.map((attachment) => (
-                  <PreviewAttachment
-                    key={
-                      attachment.url ||
-                      attachment.name ||
-                      `attachment-${attachment.type}-${Math.random().toString(36).substring(2, 9)}`
-                    }
-                    attachment={attachment}
-                    inMessage={true}
-                  />
-                ))}
+                {message.attachments
+                  .filter(
+                    (a) =>
+                      !a.type?.startsWith('text') &&
+                      !a.type?.startsWith('sheet') &&
+                      !a.type?.startsWith('image'),
+                  )
+                  .map((attachment) => (
+                    <PreviewAttachment
+                      key={
+                        attachment.url ||
+                        `attachment-${Math.random().toString(36).substring(2, 9)}`
+                      }
+                      attachment={attachment}
+                    />
+                  ))}
               </div>
             )}
 
+            {/* Handle message content */}
             {message.role === 'system' && message.content && (
               <div className="flex flex-col gap-2">
                 <div
@@ -117,18 +126,51 @@ const PurePreviewMessage = ({
                 </div>
 
                 {message.reasoning && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    <div
-                      data-testid="assistant-reasoning-content"
-                      className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border border-border"
-                    >
-                      <div className="text-xs font-medium mb-1 text-foreground/80">
-                        AI Reasoning Process:
-                      </div>
-                      <Markdown>{message.reasoning}</Markdown>
-                    </div>
-                  </div>
+                  <MessageReasoning
+                    isLoading={isLoading}
+                    reasoning={message.reasoning}
+                  />
                 )}
+              </div>
+            )}
+
+            {/* Handle artifact attachments separately */}
+            {message.attachments && (
+              <div className="flex flex-col gap-4 mt-2">
+                {message.attachments
+                  .filter(
+                    (a) =>
+                      a.type?.startsWith('text') ||
+                      a.type?.startsWith('sheet') ||
+                      a.type?.startsWith('image') ||
+                      a.type?.endsWith('-delta'),
+                  )
+                  .map((attachment) => {
+                    // Handle image content properly
+                    const content =
+                      attachment.type?.startsWith('image') && attachment.content
+                        ? attachment.content.startsWith('data:')
+                          ? attachment.content.split(',')[1] // Extract base64 from data URL
+                          : attachment.content
+                        : attachment.content || '';
+
+                    return (
+                      <DocumentPreview
+                        key={
+                          attachment.url ||
+                          `artifact-${Math.random().toString(36).substring(2, 9)}`
+                        }
+                        isReadonly={isReadonly}
+                        result={{
+                          id: attachment.url?.replace('artifact:', '') || '',
+                          title: attachment.name || 'Untitled',
+                          kind:
+                            attachment.type?.replace('-delta', '') || 'text',
+                          content: content,
+                        }}
+                      />
+                    );
+                  })}
               </div>
             )}
 

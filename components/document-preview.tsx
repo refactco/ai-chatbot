@@ -28,9 +28,19 @@ export function DocumentPreview({
 }: DocumentPreviewProps) {
   const { artifact, setArtifact } = useArtifact();
 
+  // Skip API calls for:
+  // 1. Placeholder images (URLs that start with http or contain placehold.co)
+  // 2. Special document IDs like text:article or sheet:table-data
+  const shouldFetchDocument =
+    result?.id &&
+    !String(result.id).startsWith('http') &&
+    !String(result.id).includes('placehold.co') &&
+    !String(result.id).startsWith('text:') &&
+    !String(result.id).startsWith('sheet:');
+
   const { data: documents, isLoading: isDocumentsFetching } = useSWR<
     Array<Document>
-  >(result ? `/api/document?id=${result.id}` : null, fetcher);
+  >(shouldFetchDocument ? `/api/document?id=${result.id}` : null, fetcher);
 
   const previewDocument = useMemo(() => documents?.[0], [documents]);
   const hitboxRef = useRef<HTMLDivElement>(null);
@@ -74,22 +84,35 @@ export function DocumentPreview({
   }
 
   if (isDocumentsFetching) {
-    return <LoadingSkeleton artifactKind={result.kind ?? args.kind} />;
+    return (
+      <LoadingSkeleton artifactKind={result?.kind || args?.kind || 'text'} />
+    );
   }
 
+  // If documents failed to load but we have result data, use that directly
   const document: Document | null = previewDocument
     ? previewDocument
-    : artifact.status === 'streaming'
+    : result
       ? {
-          title: artifact.title,
-          kind: artifact.kind as ArtifactKind,
-          content: artifact.content,
-          id: artifact.documentId,
+          title: result.title || 'Untitled',
+          kind: (result.kind as ArtifactKind) || 'text',
+          content: result.content || '',
+          id: result.id || '',
           createdAt: new Date(),
           userId: 'noop',
           updatedAt: new Date(),
         }
-      : null;
+      : artifact.status === 'streaming'
+        ? {
+            title: artifact.title,
+            kind: artifact.kind as ArtifactKind,
+            content: artifact.content,
+            id: artifact.documentId,
+            createdAt: new Date(),
+            userId: 'noop',
+            updatedAt: new Date(),
+          }
+        : null;
 
   if (!document) return <LoadingSkeleton artifactKind={artifact.kind} />;
 
@@ -97,7 +120,7 @@ export function DocumentPreview({
     <div className="relative w-full cursor-pointer">
       <HitboxLayer
         hitboxRef={hitboxRef}
-        result={result}
+        result={result || document}
         setArtifact={setArtifact}
       />
       <DocumentHeader
@@ -148,25 +171,45 @@ const PureHitboxLayer = ({
 }) => {
   const handleClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
       const boundingBox = event.currentTarget.getBoundingClientRect();
 
-      setArtifact((artifact) =>
-        artifact.status === 'streaming'
-          ? { ...artifact, isVisible: true }
-          : {
-              ...artifact,
-              title: result.title,
-              documentId: result.id,
-              kind: result.kind,
-              isVisible: true,
-              boundingBox: {
-                left: boundingBox.x,
-                top: boundingBox.y,
-                width: boundingBox.width,
-                height: boundingBox.height,
-              },
-            },
-      );
+      // Create a sanitized document ID that won't trigger unnecessary API calls
+      // For special document types like text:article, we'll use a special prefix
+      let documentId = result?.id || '';
+
+      // Don't store URLs or special document IDs directly to prevent API calls
+      if (
+        documentId.startsWith('http') ||
+        documentId.includes('placehold.co') ||
+        documentId.startsWith('text:') ||
+        documentId.startsWith('sheet:')
+      ) {
+        // Use a local identifier prefix to prevent API calls
+        documentId = `local:${documentId}`;
+      }
+
+      const artifactData = {
+        title: result?.title || 'Untitled',
+        documentId,
+        kind: result?.kind || 'text',
+        content: result?.content || '',
+      };
+
+      setArtifact((artifact) => ({
+        ...artifact,
+        ...artifactData,
+        isVisible: true,
+        boundingBox: {
+          left: boundingBox.x,
+          top: boundingBox.y,
+          width: boundingBox.width,
+          height: boundingBox.height,
+        },
+        status: 'idle',
+      }));
+
+      console.log('Opening artifact in fullscreen', artifactData);
     },
     [setArtifact, result],
   );
@@ -180,9 +223,17 @@ const PureHitboxLayer = ({
       aria-hidden="true"
     >
       <div className="w-full p-4 flex justify-end items-center">
-        <div className="absolute right-[9px] top-[13px] p-2 hover:dark:bg-zinc-700 rounded-md hover:bg-zinc-100">
+        <button
+          type="button"
+          aria-label="Open in fullscreen"
+          className="absolute right-[9px] top-[13px] p-2 hover:dark:bg-zinc-700 rounded-md hover:bg-zinc-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick(e as MouseEvent<HTMLElement>);
+          }}
+        >
           <FullscreenIcon />
-        </div>
+        </button>
       </div>
     </div>
   );
