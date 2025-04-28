@@ -58,6 +58,13 @@ const DOCUMENT_IDS = {
   SHEET: 'sheet:table-data',
 };
 
+// Document titles for each artifact type
+const DOCUMENT_TITLES = {
+  TEXT: 'Comprehensive Research Document',
+  SHEET: 'Sales Data Analysis',
+  IMAGE: 'AI-Generated Visual Output',
+};
+
 const SAMPLE_TEXT = `# Sample Text Document
 
 This is a sample text document for testing the text artifact viewer. You can edit this text to test the document editing capabilities.
@@ -167,27 +174,6 @@ export const mockApiService = {
         return PLACEHOLDER_IMAGE_URLS[index];
       };
 
-      // If the message contains specific keywords, return appropriate artifacts
-      if (message.toLowerCase().includes('image')) {
-        // Create image attachment with consistent URL
-        const imageAttachment = {
-          type: 'image',
-          url: getImageUrlForMessage(message),
-        };
-
-        const assistantMessage: ChatMessage = {
-          id: generateUUID(),
-          content: 'Here is your generated image.',
-          role: 'assistant',
-          createdAt: new Date(),
-          attachments: [imageAttachment],
-        };
-
-        onChunk(assistantMessage);
-        onFinish(assistantMessage);
-        return;
-      }
-
       // Handle sheet artifact request
       if (
         message.toLowerCase().includes('sheet') ||
@@ -198,6 +184,7 @@ export const mockApiService = {
           type: 'sheet',
           url: DOCUMENT_IDS.SHEET,
           content: SAMPLE_SHEET,
+          title: DOCUMENT_TITLES.SHEET,
         };
 
         const assistantMessage: ChatMessage = {
@@ -223,6 +210,7 @@ export const mockApiService = {
           type: 'text',
           url: DOCUMENT_IDS.TEXT,
           content: SAMPLE_TEXT,
+          title: DOCUMENT_TITLES.TEXT,
         };
 
         const assistantMessage: ChatMessage = {
@@ -231,6 +219,28 @@ export const mockApiService = {
           role: 'assistant',
           createdAt: new Date(),
           attachments: [textAttachment],
+        };
+
+        onChunk(assistantMessage);
+        onFinish(assistantMessage);
+        return;
+      }
+
+      // If the message contains specific keywords, return appropriate artifacts
+      if (message.toLowerCase().includes('image')) {
+        // Create image attachment with consistent URL
+        const imageAttachment = {
+          type: 'image',
+          url: getImageUrlForMessage(message),
+          title: DOCUMENT_TITLES.IMAGE,
+        };
+
+        const assistantMessage: ChatMessage = {
+          id: generateUUID(),
+          content: 'Here is your generated image.',
+          role: 'assistant',
+          createdAt: new Date(),
+          attachments: [imageAttachment],
         };
 
         onChunk(assistantMessage);

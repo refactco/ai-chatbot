@@ -60,6 +60,27 @@ interface Attachment {
 }
 ```
 
+## Attachment Format
+
+Artifacts are passed in the chat interface as attachments with a special format:
+
+```typescript
+interface Attachment {
+  type: string; // 'text', 'image', 'sheet', etc.
+  url: string;  // Document ID or actual URL for images
+  content?: string; // Optional inline content
+  title?: string; // Title displayed in the artifact header
+}
+```
+
+The `type` field indicates which artifact renderer should be used, while the `url` field contains either:
+1. A document ID (for text and sheet artifacts)
+2. An actual URL (for image artifacts)
+
+The `content` field can contain optional inline content to be displayed immediately, before document versions are loaded.
+
+The `title` field provides a descriptive title for the artifact, which is displayed in the artifact header. This helps users identify the purpose or content of the artifact at a glance.
+
 ## Data Flow
 
 ### Artifact Creation

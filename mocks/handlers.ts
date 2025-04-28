@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { generateUUID } from '@/lib/utils';
 import type { Attachment } from '@/lib/ai/types';
+import { DOCUMENT_TITLES, SAMPLE_TEXT, SAMPLE_SHEET } from './data';
 
 interface ChatMessageRequest {
   message: string;
@@ -160,5 +161,69 @@ export const handlers = [
     };
 
     return HttpResponse.json(newChat);
+  }),
+
+  // Handler for retrieving document versions
+  http.get('/api/document', ({ request }) => {
+    const url = new URL(request.url);
+    const documentId = url.searchParams.get('id');
+
+    // Determine document kind and title based on ID
+    let kind = 'text';
+    let title = DOCUMENT_TITLES.TEXT;
+
+    if (documentId?.startsWith('text:')) {
+      kind = 'text';
+      title = DOCUMENT_TITLES.TEXT;
+    } else if (documentId?.startsWith('sheet:')) {
+      kind = 'sheet';
+      title = DOCUMENT_TITLES.SHEET;
+    } else if (
+      documentId?.includes('image') ||
+      documentId?.includes('placehold.co')
+    ) {
+      kind = 'image';
+      title = DOCUMENT_TITLES.IMAGE;
+    }
+
+    // Create a sample document with the appropriate content
+    const content =
+      kind === 'text' ? SAMPLE_TEXT : kind === 'sheet' ? SAMPLE_SHEET : '';
+
+    const document = {
+      id: documentId || '',
+      title,
+      kind,
+      content,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: 'mock-user',
+    };
+
+    return HttpResponse.json([document]);
+  }),
+
+  // Handler for creating new document versions
+  http.post('/api/document', async ({ request }) => {
+    const url = new URL(request.url);
+    const documentId = url.searchParams.get('id');
+    const reqBody = (await request.json()) as {
+      title?: string;
+      kind?: string;
+      content?: string;
+    };
+
+    // Return the updated document
+    const document = {
+      id: documentId || '',
+      title: reqBody.title || 'Untitled',
+      kind: reqBody.kind || 'text',
+      content: reqBody.content || '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: 'mock-user',
+    };
+
+    return HttpResponse.json(document);
   }),
 ];

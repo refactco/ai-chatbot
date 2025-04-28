@@ -1,6 +1,13 @@
 export const SAMPLE_IMAGE_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAnElEQVR42u3RAQ0AAAgDoM/0qQFrHN4Egmh3pgkCQIAAAQJEgAABAgQIECBAgAABAgQIECBAgAABAgQIECBABAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQAQIECBAgAABAgQIECBAgAABAgQIEA+xMnAAD0KOdQ4AAAAASUVORK5CYII=';
 
+// Document titles for each artifact type
+export const DOCUMENT_TITLES = {
+  TEXT: 'Comprehensive Research Document',
+  SHEET: 'Sales Data Analysis',
+  IMAGE: 'AI-Generated Visual Output',
+};
+
 export const SAMPLE_TEXT = `# Sample Text Document
 
 This is a sample text document for testing the text artifact viewer. You can edit this text to test the document editing capabilities.

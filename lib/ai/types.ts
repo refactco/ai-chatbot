@@ -32,6 +32,7 @@ export interface Attachment {
   name?: string;
   content?: string;
   url: string;
+  title?: string;
 }
 
 // For core message types

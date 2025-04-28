@@ -163,7 +163,8 @@ const PurePreviewMessage = ({
                         isReadonly={isReadonly}
                         result={{
                           id: attachment.url?.replace('artifact:', '') || '',
-                          title: attachment.name || 'Untitled',
+                          title:
+                            attachment.title || attachment.name || 'Untitled',
                           kind:
                             attachment.type?.replace('-delta', '') || 'text',
                           content: content,
