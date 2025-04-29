@@ -1,3 +1,21 @@
+/**
+ * Sheet Component
+ *
+ * This component provides a sliding panel UI pattern for displaying additional content
+ * that appears from the edge of the screen. Built on Radix UI's Dialog primitives.
+ *
+ * Features:
+ * - Multiple position variants (top, right, bottom, left)
+ * - Animated transitions with configurable durations
+ * - Header and footer layout components
+ * - Accessible close button with keyboard support
+ * - Responsive sizing (percentage-based with max-width on larger screens)
+ * - Full ARIA support for accessibility
+ *
+ * The sheet is commonly used for mobile navigation, filters, or detail views without
+ * navigating away from the current page.
+ */
+
 'use client';
 
 import * as React from 'react';

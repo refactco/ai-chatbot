@@ -1,14 +1,36 @@
+/**
+ * Mock API Handlers
+ *
+ * This file defines the mock API handlers for simulating backend functionality.
+ * It provides request handlers for the Mock Service Worker (MSW) library.
+ *
+ * Features:
+ * - Mock chat messaging system (send, receive, stream)
+ * - Mock conversation history management
+ * - Mock document management for artifacts
+ * - In-memory data storage for testing
+ *
+ * These handlers simulate the backend API functionality during development
+ * and testing, allowing the frontend to work without a real backend connection.
+ */
+
 import { http, HttpResponse } from 'msw';
 import { generateUUID } from '@/lib/utils';
 import type { Attachment } from '@/lib/api/types';
 import { DOCUMENT_TITLES, SAMPLE_TEXT, SAMPLE_SHEET } from './data';
 
+/**
+ * Interface for chat message request payload
+ */
 interface ChatMessageRequest {
   message: string;
   attachments?: Attachment[];
   chatId?: string;
 }
 
+/**
+ * Interface for chat metadata
+ */
 interface Chat {
   id: string;
   title: string;
@@ -17,6 +39,9 @@ interface Chat {
   updatedAt: Date;
 }
 
+/**
+ * Interface for individual chat messages
+ */
 interface ChatMessage {
   id: string;
   content: string;
@@ -26,15 +51,28 @@ interface ChatMessage {
   reasoning?: string;
 }
 
+/**
+ * Interface combining chat metadata with its messages
+ */
 interface ChatHistoryEntry {
   chat: Chat;
   messages: ChatMessage[];
 }
 
+/**
+ * In-memory storage for chat history
+ * Maps chat IDs to their full data including messages
+ */
 const chatHistory: Record<string, ChatHistoryEntry> = {};
 
+/**
+ * Collection of mock API request handlers for MSW
+ */
 export const handlers = [
-  // Handler for sending user messages
+  /**
+   * Handler for sending user messages
+   * Creates a user message and stores it in chat history
+   */
   http.post('/api/chat/message', async ({ request }) => {
     const {
       message,
@@ -55,6 +93,7 @@ export const handlers = [
 
     // Save to chat history
     if (!chatHistory[chatId]) {
+      // Create new chat if it doesn't exist
       chatHistory[chatId] = {
         chat: {
           id: chatId,
@@ -67,6 +106,7 @@ export const handlers = [
         messages: [userMessage],
       };
     } else {
+      // Add to existing chat
       chatHistory[chatId].messages.push(userMessage);
       chatHistory[chatId].chat.lastMessagePreview = message;
       chatHistory[chatId].chat.updatedAt = new Date();
@@ -75,13 +115,17 @@ export const handlers = [
     return HttpResponse.json(userMessage);
   }),
 
-  // Handler for streaming AI responses
+  /**
+   * Handler for streaming AI responses
+   * Simulates a streaming response with a simple message
+   */
   http.post('/api/chat/stream', async ({ request }) => {
     // Always return a single, generic assistant message
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Add a small delay to simulate network latency
           await new Promise((resolve) => setTimeout(resolve, 300));
           const assistantMessage = {
             id: generateUUID(),
@@ -89,6 +133,8 @@ export const handlers = [
             role: 'assistant',
             createdAt: new Date(),
           };
+
+          // Send the assistant message
           controller.enqueue(
             encoder.encode(
               `${JSON.stringify({
@@ -97,6 +143,8 @@ export const handlers = [
               })}\n`,
             ),
           );
+
+          // Send the finish message
           controller.enqueue(
             encoder.encode(
               `${JSON.stringify({
@@ -111,6 +159,8 @@ export const handlers = [
         }
       },
     });
+
+    // Return streaming response with appropriate headers
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
@@ -120,7 +170,10 @@ export const handlers = [
     });
   }),
 
-  // Handler for fetching chat history
+  /**
+   * Handler for fetching chat history
+   * Returns a list of all chats, sorted by recent activity
+   */
   http.get('/api/chats', () => {
     // Get all chats, sort by updatedAt (newest first)
     const chats = Object.values(chatHistory)
@@ -130,12 +183,16 @@ export const handlers = [
     return HttpResponse.json(chats);
   }),
 
-  // Handler for fetching a specific chat with messages
+  /**
+   * Handler for fetching a specific chat with messages
+   * Returns complete chat data including message history
+   */
   http.get(
     '/api/chat/:chatId',
     ({ params }: { params: { chatId: string } }) => {
       const { chatId } = params;
 
+      // Return 404 if chat doesn't exist
       if (!chatHistory[chatId]) {
         return new HttpResponse(null, { status: 404 });
       }
@@ -144,7 +201,10 @@ export const handlers = [
     },
   ),
 
-  // Handler for creating a new chat
+  /**
+   * Handler for creating a new chat
+   * Returns a new empty chat with a generated ID
+   */
   http.post('/api/chat', () => {
     const chatId = generateUUID();
     const newChat = {
@@ -163,7 +223,10 @@ export const handlers = [
     return HttpResponse.json(newChat);
   }),
 
-  // Handler for retrieving document versions
+  /**
+   * Handler for retrieving document versions
+   * Returns mock document data based on document ID
+   */
   http.get('/api/document', ({ request }) => {
     const url = new URL(request.url);
     const documentId = url.searchParams.get('id');
@@ -172,6 +235,7 @@ export const handlers = [
     let kind = 'text';
     let title = DOCUMENT_TITLES.TEXT;
 
+    // Infer document type from ID prefix
     if (documentId?.startsWith('text:')) {
       kind = 'text';
       title = DOCUMENT_TITLES.TEXT;
@@ -203,7 +267,10 @@ export const handlers = [
     return HttpResponse.json([document]);
   }),
 
-  // Handler for creating new document versions
+  /**
+   * Handler for creating new document versions
+   * Accepts updates to documents and returns the updated version
+   */
   http.post('/api/document', async ({ request }) => {
     const url = new URL(request.url);
     const documentId = url.searchParams.get('id');

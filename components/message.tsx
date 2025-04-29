@@ -1,3 +1,20 @@
+/**
+ * Message Component
+ *
+ * This component renders individual messages in the chat interface.
+ * It handles different message types (user, assistant, system) and their styling.
+ *
+ * Features:
+ * - Role-based message styling and icons
+ * - Support for attachments and artifacts
+ * - Message editing functionality
+ * - Animation for message transitions
+ * - Support for AI reasoning display
+ *
+ * This component is optimized with memoization to prevent unnecessary re-renders
+ * and supports both plain text and markdown content.
+ */
+
 'use client';
 
 import type { UIMessage } from '@/lib/api/types';
@@ -16,6 +33,17 @@ import { MessageEditor } from './message-editor';
 import type { UseChatHelpers } from '@/lib/api/types';
 import { MessageReasoning } from './message-reasoning';
 
+/**
+ * The core message component that renders a single chat message
+ *
+ * @param chatId - ID of the current chat
+ * @param message - Message data to render
+ * @param isLoading - Whether the message is currently loading
+ * @param setMessages - Function to update messages
+ * @param reload - Function to reload the chat
+ * @param isReadonly - Whether the chat is in readonly mode
+ * @returns A rendered message with appropriate styling based on role
+ */
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -51,6 +79,7 @@ const PurePreviewMessage = ({
             },
           )}
         >
+          {/* System message avatar */}
           {message.role === 'system' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
@@ -59,6 +88,7 @@ const PurePreviewMessage = ({
             </div>
           )}
 
+          {/* Assistant message avatar */}
           {message.role === 'assistant' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
@@ -67,6 +97,7 @@ const PurePreviewMessage = ({
             </div>
           )}
 
+          {/* User message avatar */}
           {message.role === 'user' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
@@ -101,7 +132,7 @@ const PurePreviewMessage = ({
               </div>
             )}
 
-            {/* Handle message content */}
+            {/* Handle system message content - AI reasoning */}
             {message.role === 'system' && message.content && (
               <div className="flex flex-col gap-2">
                 <div
@@ -116,6 +147,7 @@ const PurePreviewMessage = ({
               </div>
             )}
 
+            {/* Handle assistant message content */}
             {message.role === 'assistant' && message.content && (
               <div className="flex flex-col gap-4">
                 <div
@@ -175,6 +207,7 @@ const PurePreviewMessage = ({
               </div>
             )}
 
+            {/* Handle user message content with edit capability */}
             {message.role === 'user' &&
               message.content &&
               (mode === 'view' ? (
@@ -220,6 +253,7 @@ const PurePreviewMessage = ({
           </div>
         </div>
 
+        {/* Message actions for assistant messages */}
         {message.role === 'assistant' && !isLoading && (
           <div className="flex w-full justify-start gap-2 pl-12 mt-1">
             <MessageActions chatId={chatId} message={message} />
@@ -230,6 +264,10 @@ const PurePreviewMessage = ({
   );
 };
 
+/**
+ * Memoized message component to prevent unnecessary re-renders
+ * Only re-renders when the message content or loading state changes
+ */
 export const PreviewMessage = memo(
   PurePreviewMessage,
   (prevProps, nextProps) => {
@@ -240,6 +278,10 @@ export const PreviewMessage = memo(
   },
 );
 
+/**
+ * Component to show a loading indicator while the AI is generating a response
+ * @returns A placeholder message with loading animation
+ */
 export const ThinkingMessage = () => {
   return (
     <div className="flex items-center gap-4 mx-auto max-w-3xl px-4">
@@ -247,9 +289,6 @@ export const ThinkingMessage = () => {
         <div className="translate-y-px">
           <SparklesIcon size={14} />
         </div>
-      </div>
-      <div className="h-8 flex items-center text-muted-foreground">
-        Thinking…
       </div>
     </div>
   );

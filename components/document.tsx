@@ -1,3 +1,18 @@
+/**
+ * Document Component
+ *
+ * This component provides UI elements for document creation and updates in chat.
+ * Features:
+ * - Document tool call representation during creation/updating
+ * - Document result representation after creation/completion
+ * - Consistent styling and interaction patterns for document operations
+ * - Support for different document types (text, code, sheets, etc.)
+ * - Clickable buttons to open artifacts in full view
+ *
+ * Used to represent document operations requested in chat messages
+ * and provide access to created artifacts.
+ */
+
 import { memo } from 'react';
 
 import type { ArtifactKind } from './artifact';
@@ -5,6 +20,12 @@ import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
 import { toast } from 'sonner';
 import { useArtifact } from '@/hooks/use-artifact';
 
+/**
+ * Determines the appropriate text based on operation type and tense
+ * @param type - The type of document operation
+ * @param tense - Whether to use present or past tense
+ * @returns The appropriate action text
+ */
 const getActionText = (
   type: 'create' | 'update' | 'request-suggestions',
   tense: 'present' | 'past',
@@ -29,6 +50,10 @@ interface DocumentToolResultProps {
   isReadonly: boolean;
 }
 
+/**
+ * Displays a completed document operation with interactive button
+ * to open the created/updated document
+ */
 function PureDocumentToolResult({
   type,
   result,
@@ -92,6 +117,9 @@ interface DocumentToolCallProps {
   isReadonly: boolean;
 }
 
+/**
+ * Displays an in-progress document operation with loading indicator
+ */
 function PureDocumentToolCall({
   type,
   args,

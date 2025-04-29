@@ -1,70 +1,101 @@
 /**
- * Mock API Service for AI Agent Backend
+ * Mock API Service
  *
- * This service simulates the backend API endpoints for the AI agent.
- * It provides the following endpoints:
- * 1. sendMessage - For sending user messages to the AI
- * 2. streamResponse - For streaming AI responses back
- * 3. getChatHistory - For retrieving chat history
+ * This service simulates the backend API for AI chat and artifact functionality.
+ * It provides mock implementations of API endpoints for development and testing.
  *
- * This will be replaced with actual API calls to your backend once it's ready.
+ * Features:
+ * - Chat message sending and receiving
+ * - Response streaming simulation
+ * - Chat history management
+ * - Artifact generation (text, image, sheet)
+ * - Realistic response delays
+ *
+ * This implementation allows frontend development to proceed without
+ * requiring a real backend, and will be replaced with actual API
+ * calls once the backend is ready.
  */
 
 import { generateUUID } from '@/lib/utils';
 import type { Attachment } from '@/lib/api/types';
 
-// Type definitions
+/**
+ * Represents a chat message in the system
+ * Contains all data needed for displaying a message
+ */
 export interface ChatMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant' | 'system';
-  createdAt: Date;
-  attachments?: Attachment[];
-  reasoning?: string;
+  id: string; // Unique identifier
+  content: string; // Message text content
+  role: 'user' | 'assistant' | 'system'; // Who sent the message
+  createdAt: Date; // When the message was created
+  attachments?: Attachment[]; // Optional files or artifacts attached to message
+  reasoning?: string; // Optional explanation of AI reasoning
 }
 
+/**
+ * Represents a chat conversation summary
+ * Used for displaying in chat history list
+ */
 export interface ChatSummary {
-  id: string;
-  title: string;
-  lastMessagePreview: string;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string; // Unique identifier
+  title: string; // Display title
+  lastMessagePreview: string; // Preview of the most recent message
+  createdAt: Date; // When the chat was created
+  updatedAt: Date; // When the chat was last updated
 }
 
+/**
+ * Options for the streaming response function
+ * Provides callbacks for different streaming events
+ */
 export interface StreamResponseOptions {
-  onChunk: (chunk: string | ChatMessage) => void;
-  onFinish: (message: ChatMessage) => void;
-  onError: (error: Error) => void;
+  onChunk: (chunk: string | ChatMessage) => void; // Called for each chunk
+  onFinish: (message: ChatMessage) => void; // Called when stream completes
+  onError: (error: Error) => void; // Called on error
 }
 
-// Placeholder image URLs for testing - using public placeholder services
+/**
+ * Collection of placeholder image URLs for testing
+ * These use public placeholder services to generate sample images
+ */
 const PLACEHOLDER_IMAGE_URLS = [
   'https://placehold.co/600x400/3498db/ffffff?text=AI+Generated+Image',
-  'https://placehold.co/600x400/e74c3c/ffffff?text=AI+Generated+Chart',
-  'https://placehold.co/600x400/27ae60/ffffff?text=AI+Generated+Visualization',
-  'https://placehold.co/600x400/f39c12/ffffff?text=AI+Generated+Graph',
-  'https://placehold.co/600x400/9b59b6/ffffff?text=AI+Generated+Diagram',
 ];
 
-// Get a random placeholder image URL
+/**
+ * Selects a random placeholder image URL
+ * Used for simulating image generation
+ *
+ * @returns A random placeholder image URL
+ */
 const getRandomPlaceholderImageUrl = () => {
   const randomIndex = Math.floor(Math.random() * PLACEHOLDER_IMAGE_URLS.length);
   return PLACEHOLDER_IMAGE_URLS[randomIndex];
 };
 
-// Constants for consistent document IDs
+/**
+ * Constants for consistent document IDs
+ * Ensures that the same document types use consistent IDs
+ */
 const DOCUMENT_IDS = {
   TEXT: 'text:article',
   SHEET: 'sheet:table-data',
 };
 
-// Document titles for each artifact type
+/**
+ * Document titles for each artifact type
+ * Provides consistent naming for generated artifacts
+ */
 const DOCUMENT_TITLES = {
   TEXT: 'Comprehensive Research Document',
   SHEET: 'Sales Data Analysis',
   IMAGE: 'AI-Generated Visual Output',
 };
 
+/**
+ * Sample text content for text artifact generation
+ * Used when creating mock text documents
+ */
 const SAMPLE_TEXT = `# Sample Text Document
 
 This is a sample text document for testing the text artifact viewer. You can edit this text to test the document editing capabilities.
@@ -79,6 +110,10 @@ This is a sample text document for testing the text artifact viewer. You can edi
 2. Create a new version
 3. Check the version history`;
 
+/**
+ * Sample spreadsheet content in CSV format
+ * Used when creating mock sheet artifacts
+ */
 const SAMPLE_SHEET = `Name,Age,City,Occupation
 John Doe,32,New York,Engineer
 Jane Smith,28,San Francisco,Designer
@@ -86,7 +121,10 @@ Michael Johnson,45,Chicago,Manager
 Linda Williams,39,Boston,Doctor
 Robert Brown,24,Seattle,Developer`;
 
-// In-memory storage for chat history
+/**
+ * In-memory storage for chat history
+ * Maps chat IDs to their metadata and messages
+ */
 const chatHistory: Record<
   string,
   {
@@ -95,10 +133,19 @@ const chatHistory: Record<
   }
 > = {};
 
-// The mock API service
+/**
+ * The mock API service implementation
+ * Provides methods that simulate backend API functionality
+ */
 export const mockApiService = {
   /**
-   * Send a message to the AI agent
+   * Sends a user message to the simulated AI backend
+   * Stores the message in chat history and returns it
+   *
+   * @param message - The text content of the message
+   * @param attachments - Optional files or artifacts to attach
+   * @param chatId - Optional ID of the chat to add this message to
+   * @returns The created user message object
    */
   sendMessage: async (
     message: string,
@@ -144,8 +191,13 @@ export const mockApiService = {
   },
 
   /**
-   * Stream an AI response based on a user message
-   * This simulates the streaming response from the backend
+   * Simulates a streaming response from the AI backend
+   * Analyzes the message content to generate appropriate mock responses
+   *
+   * @param message - The user message to respond to
+   * @param options - Callbacks for handling streaming events
+   * @param chatId - Optional chat ID to associate with this response
+   * @param attachments - Optional attachments from the user message
    */
   streamResponse: async (
     message: string,
@@ -160,8 +212,13 @@ export const mockApiService = {
       // Simulate API request delay
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Generate a deterministic image URL based on the message content
-      // This ensures the same message always gets the same image
+      /**
+       * Generates a deterministic image URL based on message content
+       * Ensures the same message always gets the same image
+       *
+       * @param message - The message to generate an image for
+       * @returns A placeholder image URL
+       */
       const getImageUrlForMessage = (message: string) => {
         // Simple hash function to get a deterministic index
         const hashStr = message.toLowerCase().trim();

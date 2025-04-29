@@ -1,6 +1,30 @@
+/**
+ * Multimodal Input Component
+ *
+ * This component provides the input interface for the chat, supporting text input,
+ * file attachments, and message submission controls.
+ *
+ * Features:
+ * - Auto-resizing text input area
+ * - File attachment upload and preview
+ * - Stop generation button
+ * - Send message button
+ * - Suggested actions for empty chats
+ * - Mobile and desktop responsive design
+ *
+ * The component handles both text input and file attachments for multimodal
+ * conversations with the AI system.
+ */
+
 'use client';
 
-import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/api/types';
+import type {
+  Attachment,
+  UIMessage,
+  UseChatHelpers,
+  Message,
+  CreateMessage,
+} from '@/lib/api/types';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -23,7 +47,13 @@ import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 
-// Helper function to read file as data URL
+/**
+ * Helper function to read file as data URL
+ * Used for file attachment processing
+ *
+ * @param file - File object to read
+ * @returns Promise resolving to data URL string
+ */
 const readFileAsDataURL = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -33,6 +63,13 @@ const readFileAsDataURL = (file: File): Promise<string> => {
   });
 };
 
+/**
+ * Main multimodal input component for chat interface
+ * Manages text input, file attachments, and submission controls
+ *
+ * @param props - Component properties including chat state and handlers
+ * @returns Rendered input component with textarea and control buttons
+ */
 function PureMultimodalInput({
   chatId,
   input,
@@ -69,6 +106,10 @@ function PureMultimodalInput({
     }
   }, []);
 
+  /**
+   * Adjusts the height of the textarea based on content
+   * Creates auto-expanding input experience
+   */
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -76,6 +117,10 @@ function PureMultimodalInput({
     }
   };
 
+  /**
+   * Resets the height of the textarea to default
+   * Used after submitting a message
+   */
   const resetHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -104,6 +149,11 @@ function PureMultimodalInput({
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
 
+  /**
+   * Handles input changes and adjusts textarea height
+   *
+   * @param event - Input change event
+   */
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
     adjustHeight();
@@ -112,6 +162,10 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
+  /**
+   * Handles form submission and message sending
+   * Clears input and attachments after submission
+   */
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
@@ -135,6 +189,13 @@ function PureMultimodalInput({
     chatId,
   ]);
 
+  /**
+   * Uploads a file and returns attachment data
+   * In mock implementation, creates object URLs
+   *
+   * @param file - File to upload
+   * @returns Promise resolving to attachment data
+   */
   const uploadFile = async (file: File) => {
     try {
       // In this mock implementation, we're just returning a fake URL
@@ -142,17 +203,23 @@ function PureMultimodalInput({
       console.log('Uploading file:', file.name);
 
       return {
-        type: 'file', // Add the required type property
+        type: file.type,
         url: URL.createObjectURL(file),
         name: file.name,
-        content: await readFileAsDataURL(file),
+        content: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       } as Attachment;
     } catch (error) {
       console.error('Error uploading file:', error);
+      toast.error('Failed to upload file, please try again!');
       return undefined;
     }
   };
 
+  /**
+   * Handles file input change and processes selected files
+   *
+   * @param event - File input change event
+   */
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
@@ -181,13 +248,13 @@ function PureMultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-4">
+      {/* Show suggested actions when chat is empty */}
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
           <SuggestedActions
-            append={(message: UIMessage, options: any) => {
+            append={(message: UIMessage | Message | CreateMessage) => {
               append(message);
-              return Promise.resolve(undefined);
             }}
             chatId={chatId}
           />
@@ -202,6 +269,7 @@ function PureMultimodalInput({
         tabIndex={-1}
       />
 
+      {/* Show file attachment previews */}
       {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div
           data-testid="attachments-preview"
@@ -209,23 +277,18 @@ function PureMultimodalInput({
         >
           {attachments.map((attachment) => (
             <PreviewAttachment
-              key={
-                attachment.url ||
-                attachment.name ||
-                `attachment-${attachment.type}-${Math.random().toString(36).substring(2, 9)}`
-              }
+              key={attachment.url || `attachment-${Math.random().toString(36).substring(2, 9)}`}
               attachment={attachment}
             />
           ))}
 
           {uploadQueue.map((filename) => (
             <PreviewAttachment
-              key={`upload-${filename}-${Math.random().toString(36).substring(2, 9)}`}
+              key={filename}
               attachment={{
-                type: 'file',
                 url: '',
                 name: filename,
-                content: '',
+                type: '',
               }}
               isUploading={true}
             />
@@ -281,17 +344,12 @@ function PureMultimodalInput({
   );
 }
 
-export const MultimodalInput = memo(
-  PureMultimodalInput,
-  (prevProps, nextProps) => {
-    if (prevProps.input !== nextProps.input) return false;
-    if (prevProps.status !== nextProps.status) return false;
-    if (!equal(prevProps.attachments, nextProps.attachments)) return false;
-
-    return true;
-  },
-);
-
+/**
+ * Button component for file attachments
+ *
+ * @param props - Component props with file input reference and status
+ * @returns Rendered attachment button
+ */
 function PureAttachmentsButton({
   fileInputRef,
   status,
@@ -315,8 +373,12 @@ function PureAttachmentsButton({
   );
 }
 
-const AttachmentsButton = memo(PureAttachmentsButton);
-
+/**
+ * Button component to stop message generation
+ *
+ * @param props - Component props with stop function and message setter
+ * @returns Rendered stop button
+ */
 function PureStopButton({
   stop,
   setMessages,
@@ -339,8 +401,12 @@ function PureStopButton({
   );
 }
 
-const StopButton = memo(PureStopButton);
-
+/**
+ * Button component for sending messages
+ *
+ * @param props - Component props with submit function and input state
+ * @returns Rendered send button
+ */
 function PureSendButton({
   submitForm,
   input,
@@ -365,9 +431,18 @@ function PureSendButton({
   );
 }
 
-const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
-  if (prevProps.uploadQueue.length !== nextProps.uploadQueue.length)
-    return false;
-  if (prevProps.input !== nextProps.input) return false;
-  return true;
-});
+// Memoized components for performance optimization
+const AttachmentsButton = memo(PureAttachmentsButton);
+const StopButton = memo(PureStopButton);
+const SendButton = memo(PureSendButton);
+
+export const MultimodalInput = memo(
+  PureMultimodalInput,
+  (prevProps, nextProps) => {
+    if (prevProps.input !== nextProps.input) return false;
+    if (prevProps.status !== nextProps.status) return false;
+    if (!equal(prevProps.attachments, nextProps.attachments)) return false;
+
+    return true;
+  },
+);

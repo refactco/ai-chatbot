@@ -1,3 +1,20 @@
+/**
+ * Chat Header Component
+ *
+ * This component provides the header bar for the chat interface.
+ * Features:
+ * - Sidebar toggle button for collapsing/expanding navigation
+ * - New chat button for starting a fresh conversation
+ * - Responsive design that adapts to mobile and desktop layouts
+ * - Conditionally renders elements based on sidebar state
+ * - Enhanced with tooltips for better usability
+ * - Memoized to prevent unnecessary rerenders
+ *
+ * Positioned at the top of the chat interface, this component
+ * provides essential navigation controls while maintaining a
+ * clean, minimal design.
+ */
+
 'use client';
 
 import { useRouter } from 'next/navigation';

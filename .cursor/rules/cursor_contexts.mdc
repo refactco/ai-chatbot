@@ -30,6 +30,40 @@ When asking Cursor AI for help, include these contexts for optimal results:
    - Include interface definitions relevant to your task
    - Include `lib/schema.ts` when working with document-related features
 
+## File Documentation Requirements
+
+When creating new files or modifying existing ones, remember to include these documentation elements:
+
+1. **File Description Comment Block**:
+   ```tsx
+   /**
+    * Component/File Name
+    *
+    * Brief description of purpose and functionality.
+    * Features:
+    * - Key feature 1
+    * - Key feature 2
+    * - Key feature 3
+    *
+    * Any important notes or caveats.
+    */
+   ```
+
+2. **Inline Documentation**:
+   - Add explanatory comments for complex code sections
+   - Use JSDoc for functions: `/** @param name - description */`
+   - Comment major variables with their purpose
+
+3. **Component Section Comments**:
+   ```tsx
+   {/* Section name or purpose */}
+   <div className="...">
+     ...
+   </div>
+   ```
+
+When requesting help with file creation or editing, mention that these documentation requirements must be included in the implementation.
+
 ## Context Templates
 
 Use these templates for different types of requests:
@@ -46,6 +80,8 @@ Contexts:
 - [primary component file you're modifying]
 - [related component files]
 - lib/ai/types.ts (for type definitions)
+
+Remember to include the required documentation elements in any new or modified files.
 ```
 
 ### Bug Fixing

@@ -1,3 +1,17 @@
+/**
+ * Sidebar Toggle Component
+ *
+ * A button component that toggles the sidebar's open/closed state.
+ * Features:
+ * - Uses the useSidebar hook to access the toggleSidebar function
+ * - Displays a tooltip on hover for better user experience
+ * - Responsive styling with different appearance on mobile vs desktop
+ * - Visually consistent with the application's design system
+ *
+ * This component is used in the application header to allow users to
+ * collapse or expand the sidebar navigation.
+ */
+
 import type { ComponentProps } from 'react';
 
 import { type SidebarTrigger, useSidebar } from '@/components/ui/sidebar';

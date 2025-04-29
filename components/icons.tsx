@@ -1,3 +1,19 @@
+/**
+ * Icons Component Library
+ *
+ * This file provides a centralized collection of SVG icons used throughout the application.
+ * Features:
+ * - Consistent styling and sizing across all icons
+ * - Size customization via props
+ * - Current color inheritance for theme compatibility
+ * - Accessibility attributes for screen readers
+ * - Optimized SVG paths for performance
+ * - Categorized icons for different UI purposes
+ *
+ * The icons are organized by function (navigation, actions, status, etc.)
+ * and maintain a consistent API for easy use in components.
+ */
+
 export const BotIcon = () => {
   return (
     <svg

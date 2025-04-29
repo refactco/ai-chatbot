@@ -1,5 +1,21 @@
+/**
+ * Create Artifact Framework
+ *
+ * This file provides the type definitions and class for creating artifact types.
+ * Features:
+ * - Type definitions for artifact actions, toolbars, and content
+ * - Context types for sharing state between components
+ * - Artifact class for creating new artifact type definitions
+ * - Consistent interface for artifact initialization and streaming
+ * - Support for custom metadata and state management
+ *
+ * This framework enables the pluggable architecture of artifacts,
+ * allowing new types (text, image, sheet) to be added to the system
+ * with consistent interfaces and behaviors.
+ */
+
 import type { Suggestion } from '@/lib/schema';
-import type { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@/lib/api/types';
 import type { ComponentType, Dispatch, ReactNode, SetStateAction } from 'react';
 import type { DataStreamDelta } from './data-stream-handler';
 import type { UIArtifact } from './artifact';

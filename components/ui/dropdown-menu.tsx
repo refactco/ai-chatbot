@@ -1,3 +1,21 @@
+/**
+ * Dropdown Menu Component
+ *
+ * This component provides a flexible dropdown menu system for navigation and actions.
+ * It's built on top of Radix UI's dropdown primitives with consistent styling.
+ *
+ * Features:
+ * - Multiple subcomponents for building complex menu structures
+ * - Checkable and radio menu items
+ * - Nested submenus with proper keyboard navigation
+ * - Shortcut display support
+ * - Fully accessible with keyboard navigation and screen reader support
+ * - Consistent animations and transitions
+ *
+ * The component follows the composite pattern with various subcomponents that can be
+ * composed together to create complex menu structures.
+ */
+
 'use client';
 
 import * as React from 'react';

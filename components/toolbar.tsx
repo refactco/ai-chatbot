@@ -1,3 +1,20 @@
+/**
+ * Toolbar Component
+ *
+ * This component provides a floating toolbar interface for artifact-specific actions.
+ * Features:
+ * - Dynamically loads tools based on artifact type
+ * - Animated transitions between states
+ * - Reading level selector with drag interaction
+ * - Auto-hiding/showing behavior with hover detection
+ * - Tooltips for action descriptions
+ * - Mobile and desktop responsive design
+ * - Stop button during streaming state
+ *
+ * The toolbar appears in the bottom-right corner of artifact views and
+ * provides contextual actions appropriate for the current artifact type.
+ */
+
 'use client';
 
 import cx from 'classnames';
@@ -22,8 +39,20 @@ import { ArrowUpIcon, StopIcon, SummarizeIcon } from './icons';
 import { artifactDefinitions } from './artifact';
 import type { ArtifactKind } from './artifact';
 import type { ArtifactToolbarItem } from './create-artifact';
-import type { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@/lib/api/types';
 
+/**
+ * Props for individual toolbar tools
+ * @property description - Tool description displayed in tooltip
+ * @property icon - Visual representation of the tool
+ * @property selectedTool - Currently selected tool ID
+ * @property setSelectedTool - Function to update selected tool
+ * @property isToolbarVisible - Whether toolbar is expanded
+ * @property setIsToolbarVisible - Function to toggle toolbar visibility
+ * @property isAnimating - Whether animation is in progress
+ * @property append - Function to add messages to the chat
+ * @property onClick - Handler for tool activation
+ */
 type ToolProps = {
   description: string;
   icon: ReactNode;
@@ -40,6 +69,10 @@ type ToolProps = {
   }) => void;
 };
 
+/**
+ * Individual tool button component
+ * Handles selection state, hover interactions, and click events
+ */
 const Tool = ({
   description,
   icon,
@@ -53,12 +86,14 @@ const Tool = ({
 }: ToolProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Reset hover state when selected tool changes
   useEffect(() => {
     if (selectedTool !== description) {
       setIsHovered(false);
     }
   }, [selectedTool, description]);
 
+  // Handle tool selection and action triggering
   const handleSelect = () => {
     if (!isToolbarVisible && setIsToolbarVisible) {
       setIsToolbarVisible(true);
@@ -124,8 +159,13 @@ const Tool = ({
   );
 };
 
+// Random IDs for reading level selector dots
 const randomArr = [...Array(6)].map((x) => nanoid(5));
 
+/**
+ * Specialized component for selecting reading levels
+ * Implements draggable interaction for level selection
+ */
 const ReadingLevelSelector = ({
   setSelectedTool,
   append,
@@ -152,6 +192,7 @@ const ReadingLevelSelector = ({
   const [hasUserSelectedLevel, setHasUserSelectedLevel] =
     useState<boolean>(false);
 
+  // Update current level based on drag position
   useEffect(() => {
     const unsubscribe = yToLevel.on('change', (latest) => {
       const level = Math.min(5, Math.max(0, Math.round(Math.abs(latest))));
@@ -163,6 +204,7 @@ const ReadingLevelSelector = ({
 
   return (
     <div className="relative flex flex-col justify-end items-center">
+      {/* Dots representing different reading levels */}
       {randomArr.map((id) => (
         <motion.div
           key={id}
@@ -232,6 +274,10 @@ const ReadingLevelSelector = ({
   );
 };
 
+/**
+ * Container component for all tools
+ * Renders individual tools with proper animations and state
+ */
 export const Tools = ({
   isToolbarVisible,
   selectedTool,
@@ -258,6 +304,7 @@ export const Tools = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
     >
+      {/* Secondary tools that appear when toolbar is expanded */}
       <AnimatePresence>
         {isToolbarVisible &&
           secondaryTools.map((secondaryTool) => (
@@ -274,6 +321,7 @@ export const Tools = ({
           ))}
       </AnimatePresence>
 
+      {/* Primary tool always visible */}
       <Tool
         description={primaryTool.description}
         icon={primaryTool.icon}
@@ -289,6 +337,10 @@ export const Tools = ({
   );
 };
 
+/**
+ * Main toolbar component that renders different tool states
+ * Controls visibility, animations, and tool selection
+ */
 const PureToolbar = ({
   isToolbarVisible,
   setIsToolbarVisible,
@@ -312,11 +364,13 @@ const PureToolbar = ({
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Close toolbar when clicking outside
   useOnClickOutside(toolbarRef, () => {
     setIsToolbarVisible(false);
     setSelectedTool(null);
   });
 
+  // Auto-close timer functionality
   const startCloseTimer = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -334,6 +388,7 @@ const PureToolbar = ({
     }
   };
 
+  // Clean up timer on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -342,12 +397,14 @@ const PureToolbar = ({
     };
   }, []);
 
+  // Hide toolbar during streaming
   useEffect(() => {
     if (status === 'streaming') {
       setIsToolbarVisible(false);
     }
   }, [status, setIsToolbarVisible]);
 
+  // Get the appropriate tools for the current artifact type
   const artifactDefinition = artifactDefinitions.find(
     (definition) => definition.kind === artifactKind,
   );
@@ -358,6 +415,7 @@ const PureToolbar = ({
 
   const toolsByArtifactKind = artifactDefinition.toolbar;
 
+  // Don't render if no tools available for this artifact type
   if (toolsByArtifactKind.length === 0) {
     return null;
   }
@@ -408,6 +466,7 @@ const PureToolbar = ({
         ref={toolbarRef}
       >
         {status === 'streaming' ? (
+          // Stop button shown during streaming
           <motion.div
             key="stop-icon"
             initial={{ scale: 1 }}
@@ -422,6 +481,7 @@ const PureToolbar = ({
             <StopIcon />
           </motion.div>
         ) : selectedTool === 'adjust-reading-level' ? (
+          // Reading level selector when that tool is active
           <ReadingLevelSelector
             key="reading-level-selector"
             append={append}
@@ -429,6 +489,7 @@ const PureToolbar = ({
             isAnimating={isAnimating}
           />
         ) : (
+          // Standard tools display
           <Tools
             key="tools"
             append={append}
@@ -445,6 +506,10 @@ const PureToolbar = ({
   );
 };
 
+/**
+ * Memoized toolbar component for performance optimization
+ * Only re-renders when critical props change
+ */
 export const Toolbar = memo(PureToolbar, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;
   if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) return false;

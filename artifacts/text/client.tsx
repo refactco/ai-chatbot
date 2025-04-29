@@ -1,3 +1,20 @@
+/**
+ * Text Artifact Client Implementation
+ *
+ * This file defines the client-side implementation of the text artifact type.
+ * It handles rendering, interaction, and state management for text documents.
+ *
+ * Features:
+ * - Rich text editor integration
+ * - Version history navigation
+ * - Diff view for comparing versions
+ * - Suggestion system for content improvement
+ * - Toolbar actions for document enhancement
+ *
+ * The text artifact is used for creating and editing text-based content like
+ * essays, emails, and other written documents with version control support.
+ */
+
 import { Artifact } from '@/components/create-artifact';
 import { DocumentSkeleton } from '@/components/document-skeleton';
 import { Editor } from '@/components/text-editor';
@@ -14,13 +31,28 @@ import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
 import type { Suggestion } from '@/lib/schema';
 
+/**
+ * Interface defining metadata structure for text artifacts
+ * Includes suggestions array for content improvement recommendations
+ */
 interface TextArtifactMetadata {
   suggestions: Array<Suggestion>;
 }
 
+/**
+ * Text Artifact definition
+ *
+ * Creates a new text artifact type with specific behaviors and UI components
+ */
 export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
   kind: 'text',
   description: 'Useful for text content, like drafting essays and emails.',
+
+  /**
+   * Initializes a text artifact by loading its suggestions
+   * @param documentId - The document ID to load
+   * @param setMetadata - Function to update artifact metadata
+   */
   initialize: async ({ documentId, setMetadata }) => {
     const suggestions = await getSuggestions({ documentId });
 
@@ -28,7 +60,13 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       suggestions,
     });
   },
+
+  /**
+   * Handles streaming updates to the artifact
+   * Processes both suggestions and text content updates
+   */
   onStreamPart: ({ streamPart, setMetadata, setArtifact }) => {
+    // Handle incoming suggestion updates
     if (streamPart.type === 'suggestion') {
       setMetadata((metadata) => {
         return {
@@ -40,6 +78,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       });
     }
 
+    // Handle incoming text content updates
     if (streamPart.type === 'text-delta') {
       setArtifact((draftArtifact) => {
         return {
@@ -51,6 +90,11 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       });
     }
   },
+
+  /**
+   * Renders the text artifact content based on current mode and state
+   * Supports edit mode, diff mode, and loading states
+   */
   content: ({
     mode,
     status,
@@ -62,10 +106,12 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
     isLoading,
     metadata,
   }) => {
+    // Display loading skeleton while content is being fetched
     if (isLoading) {
       return <DocumentSkeleton artifactKind="text" />;
     }
 
+    // Show diff view when comparing versions
     if (mode === 'diff') {
       const oldContent = getDocumentContentById(currentVersionIndex - 1);
       const newContent = getDocumentContentById(currentVersionIndex);
@@ -73,6 +119,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       return <DiffView oldContent={oldContent} newContent={newContent} />;
     }
 
+    // Standard editor view
     return (
       <>
         <div className="flex flex-row py-8 md:p-20 px-4">
@@ -85,6 +132,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
             onSaveContent={onSaveContent}
           />
 
+          {/* Spacer for mobile view when suggestions are present */}
           {metadata?.suggestions?.length > 0 ? (
             <div className="md:hidden h-dvh w-12 shrink-0" />
           ) : null}
@@ -92,6 +140,11 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       </>
     );
   },
+
+  /**
+   * Action buttons displayed in the artifact interface
+   * Provides version navigation and clipboard functionality
+   */
   actions: [
     {
       icon: <ClockRewind size={18} />,
@@ -144,6 +197,11 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       },
     },
   ],
+
+  /**
+   * Toolbar buttons for content enhancement
+   * Provides quick access to common text operations
+   */
   toolbar: [
     {
       icon: <PenIcon />,

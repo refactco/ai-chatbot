@@ -1,9 +1,30 @@
+/**
+ * Button Component
+ *
+ * This component provides a consistent button interface throughout the application.
+ * It supports multiple variants, sizes, and can be used as a slot for other components.
+ *
+ * Features:
+ * - Multiple visual variants (default, destructive, outline, etc.)
+ * - Configurable sizes (default, sm, lg, icon)
+ * - Accessible focus states
+ * - Disabled state styling
+ * - Slot capability for wrapping other components
+ *
+ * This component is based on class-variance-authority for style variants
+ * and provides full accessibility support.
+ */
+
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Button variant styling configuration
+ * Defines all available visual and size variants
+ */
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
@@ -33,12 +54,23 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * Button component props interface
+ * Extends standard button attributes with variant properties
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 
+/**
+ * Button component with support for multiple variants and sizes
+ * Can render as a button or wrap other components via asChild
+ *
+ * @param props - Button properties including variant, size, and HTML attributes
+ * @returns Styled button component with appropriate attributes
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';

@@ -21,6 +21,73 @@ When approaching this project, consult documentation in the following order:
    - `docs/DEVELOPER-GUIDE.md` for development workflows
    - `docs/MOCK-SERVICES.md` for mock API implementation
 
+## File Documentation Requirements
+
+When creating new files or modifying existing ones, always ensure these three steps are completed:
+
+1. **Add a File Description Comment Block**:
+   - Every file must begin with a JSDoc-style comment block describing its purpose
+   - Include key features and functionality provided by the file
+   - Note any important caveats or limitations
+   - Example:
+     ```tsx
+     /**
+      * Chat Layout Component
+      *
+      * This component provides the layout structure for all chat-related pages.
+      * Features:
+      * - Sidebar for navigation and user profile
+      * - Responsive layout that can be toggled open/closed
+      * - Pyodide integration for Python execution in the browser
+      *
+      * The layout wraps all chat pages and ensures consistent UI across the chat section.
+      */
+     ```
+
+2. **Add Inline Documentation**:
+   - Add explanatory comments for major sections of code
+   - Use JSDoc comments for functions and methods with parameter descriptions
+   - Wrap complex logic in comments explaining the purpose and approach
+   - Example:
+     ```tsx
+     // Configure Geist font with Latin subset
+     const geist = Geist({
+       subsets: ['latin'],
+       display: 'swap',
+       variable: '--font-geist',
+     });
+
+     /**
+      * Generates a chat title from the first user message
+      * @param message - The user message to extract title from
+      * @returns A string title created from the first few words of the message
+      */
+     export function generateTitleFromUserMessage({...
+     ```
+
+3. **Use Component Section Comments**:
+   - Break up larger components into logical sections with descriptive comments
+   - Each major part of a component (header, form, etc.) should have a section comment
+   - Example:
+     ```tsx
+     return (
+       <div className="...">
+         {/* Header section with title and description */}
+         <div className="...">
+           <h3>Sign In</h3>
+           ...
+         </div>
+         
+         {/* Login form with email, password inputs and submit button */}
+         <div className="...">
+           ...
+         </div>
+       </div>
+     );
+     ```
+
+These documentation requirements must be applied to all new files created and any existing files that are substantially modified. Proper documentation improves code maintainability and makes it easier for other developers to understand the codebase.
+
 ## Project Structure
 
 The project follows this structure:

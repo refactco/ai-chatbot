@@ -1,3 +1,16 @@
+/**
+ * Chat Layout Component
+ *
+ * This component provides the layout structure for all chat-related pages.
+ * Features:
+ * - Sidebar for navigation and user profile
+ * - Responsive layout that can be toggled open/closed
+ * - Pyodide integration for Python execution in the browser
+ * - User context provider
+ *
+ * The layout wraps all chat pages and ensures consistent UI across the chat section.
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -24,10 +37,13 @@ export default function Layout({
 
   return (
     <>
+      {/* Load Pyodide for Python code execution in browser */}
       <Script
         src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
         strategy="beforeInteractive"
       />
+
+      {/* Sidebar context provider with navigation */}
       <SidebarProvider defaultOpen={isOpen}>
         <AppSidebar user={mockUser} />
         <SidebarInset>{children}</SidebarInset>

@@ -1,8 +1,36 @@
+/**
+ * Image Artifact Server Implementation
+ *
+ * This file defines the server-side implementation of the image artifact type.
+ * It handles image generation and updates through the API service.
+ *
+ * Features:
+ * - Image creation from text descriptions
+ * - Image updating based on modification instructions
+ * - Stream-based content updates for real-time UI feedback
+ * - Error handling for API interactions
+ *
+ * This implementation connects the image artifact UI to the backend AI services
+ * that generate and modify images based on user instructions.
+ */
+
 import { apiService } from '@/lib/api';
 import { createDocumentHandler } from '@/lib/artifacts/server';
 
+/**
+ * Image Document Handler
+ *
+ * Creates a handler for image documents with create and update capabilities
+ */
 export const imageDocumentHandler = createDocumentHandler<'image'>({
   kind: 'image',
+
+  /**
+   * Creates a new image based on a title/description prompt
+   * @param title - The description to generate the image from
+   * @param dataStream - Stream for sending updates to the client
+   * @returns The generated image content (usually base64 encoded)
+   */
   onCreateDocument: async ({ title, dataStream }) => {
     let draftContent = '';
 
@@ -39,6 +67,13 @@ export const imageDocumentHandler = createDocumentHandler<'image'>({
 
     return draftContent;
   },
+
+  /**
+   * Updates an existing image based on a description of changes
+   * @param description - The description of changes to make to the image
+   * @param dataStream - Stream for sending updates to the client
+   * @returns The updated image content (usually base64 encoded)
+   */
   onUpdateDocument: async ({ description, dataStream }) => {
     let draftContent = '';
 

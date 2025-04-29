@@ -1,7 +1,30 @@
+/**
+ * Input Component
+ *
+ * This component provides a styled input field with consistent styling.
+ * It extends the native input element with appropriate visual design.
+ *
+ * Features:
+ * - Consistent styling with the design system
+ * - Support for all HTML input types
+ * - Proper focus states
+ * - File input styling
+ * - Accessibility support
+ *
+ * Used throughout the application for text entry, search fields,
+ * and other single-line input requirements.
+ */
+
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Extended input component with consistent styling
+ *
+ * @param props - Standard input attributes plus optional className
+ * @returns Styled input component
+ */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
   ({ className, type, ...props }, ref) => {
     return (

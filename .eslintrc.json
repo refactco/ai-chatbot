@@ -1,3 +1,17 @@
+/**
+ * ESLint Configuration
+ *
+ * This file configures linting rules for the project.
+ * Features:
+ * - Next.js core web vitals rules
+ * - Import organization and validation
+ * - TypeScript-aware import resolution
+ * - Tailwind CSS class name validation
+ * - Integration with Prettier for formatting
+ *
+ * Rules are configured to ensure code quality and consistency
+ * while preventing common errors and maintaining best practices.
+ */
 {
   "extends": [
     "next/core-web-vitals",

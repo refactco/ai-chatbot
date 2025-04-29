@@ -1,3 +1,18 @@
+/**
+ * Select Component
+ *
+ * This component provides a styled dropdown select input based on Radix UI primitives.
+ * Features:
+ * - Accessible dropdown selection with keyboard navigation
+ * - Customizable trigger with clear visual feedback
+ * - Scrollable content with pagination buttons
+ * - Support for item grouping and separators
+ * - Consistent styling with the design system
+ *
+ * Used throughout the application for selecting from predefined options
+ * in forms and filtering interfaces.
+ */
+
 'use client';
 
 import * as React from 'react';

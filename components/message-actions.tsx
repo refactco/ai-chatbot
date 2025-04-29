@@ -1,3 +1,19 @@
+/**
+ * Message Actions Component
+ *
+ * This component provides interaction buttons for chat messages.
+ * Features:
+ * - Copy-to-clipboard functionality for message content
+ * - Tooltip-enhanced buttons for better usability
+ * - Conditional rendering based on message role
+ * - Success/error notifications via toast
+ * - Memoized rendering for performance optimization
+ *
+ * Currently displays only for assistant messages and provides
+ * copy functionality, with architecture supporting additional
+ * actions in the future.
+ */
+
 import { useCopyToClipboard } from 'usehooks-ts';
 import type { UIMessage } from '@/lib/api/types';
 import { CopyIcon } from './icons';
@@ -12,6 +28,10 @@ import { memo } from 'react';
 import equal from 'fast-deep-equal';
 import { toast } from 'sonner';
 
+/**
+ * Main message actions component that displays action buttons
+ * Only renders for assistant messages, not user messages
+ */
 export function PureMessageActions({
   chatId,
   message,
@@ -21,6 +41,7 @@ export function PureMessageActions({
 }) {
   const [_, copyToClipboard] = useCopyToClipboard();
 
+  // Don't show actions for user messages
   if (message.role === 'user') return null;
 
   return (
@@ -51,6 +72,10 @@ export function PureMessageActions({
   );
 }
 
+/**
+ * Memoized version of the message actions component
+ * Only re-renders when message content changes
+ */
 export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {

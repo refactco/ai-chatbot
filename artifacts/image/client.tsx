@@ -1,11 +1,37 @@
+/**
+ * Image Artifact Client Implementation
+ *
+ * This file defines the client-side implementation of the image artifact type.
+ * It handles rendering, interaction, and state management for image documents.
+ *
+ * Features:
+ * - Image display and editing capabilities
+ * - Version history navigation
+ * - Copy to clipboard functionality
+ * - Real-time streaming updates
+ *
+ * The image artifact is used for AI-generated images with version control support,
+ * allowing users to iterate on image generation with multiple versions.
+ */
+
 import { Artifact } from '@/components/create-artifact';
 import { CopyIcon, RedoIcon, UndoIcon } from '@/components/icons';
 import { ImageEditor } from '@/components/image-editor';
 import { toast } from 'sonner';
 
+/**
+ * Image Artifact definition
+ *
+ * Creates a new image artifact type with specific behaviors and UI components
+ */
 export const imageArtifact = new Artifact({
   kind: 'image',
   description: 'Useful for image generation',
+
+  /**
+   * Handles streaming updates to the image artifact
+   * Processes image content updates from the server
+   */
   onStreamPart: ({ streamPart, setArtifact }) => {
     if (streamPart.type === 'image-delta') {
       setArtifact((draftArtifact) => ({
@@ -16,7 +42,17 @@ export const imageArtifact = new Artifact({
       }));
     }
   },
+
+  /**
+   * Renders the image artifact content
+   * Uses the ImageEditor component to display the image
+   */
   content: ImageEditor,
+
+  /**
+   * Action buttons displayed in the image artifact interface
+   * Provides version navigation and clipboard functionality
+   */
   actions: [
     {
       icon: <UndoIcon size={18} />,
@@ -50,9 +86,11 @@ export const imageArtifact = new Artifact({
       icon: <CopyIcon size={18} />,
       description: 'Copy image to clipboard',
       onClick: ({ content }) => {
+        // Create an image from the base64 content
         const img = new Image();
         img.src = `data:image/png;base64,${content}`;
 
+        // When image loads, copy it to clipboard
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;

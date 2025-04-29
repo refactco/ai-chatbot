@@ -1,3 +1,18 @@
+/**
+ * Artifact Messages Component
+ *
+ * This component displays the chat messages associated with an artifact.
+ * Features:
+ * - Renders message history specific to the active artifact
+ * - Auto-scrolls to the latest message
+ * - Displays appropriate loading states during message streaming
+ * - Optimized rendering with memoization to prevent unnecessary rerenders
+ * - Handles readonly mode for historical viewing
+ *
+ * Used in the artifact sidebar to show the conversation context
+ * that led to the artifact's creation or modification.
+ */
+
 import { PreviewMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';

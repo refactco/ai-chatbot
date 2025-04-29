@@ -1,3 +1,19 @@
+/**
+ * Artifact Actions Component
+ *
+ * This component provides action buttons for interacting with artifacts.
+ * Features:
+ * - Renders action buttons based on artifact type definitions
+ * - Provides tooltips for better user experience
+ * - Handles action loading states
+ * - Conditionally disables actions based on artifact state
+ * - Toast notifications for action results
+ * - Memorized rendering for performance optimization
+ *
+ * Used in the artifact header to provide context-specific actions
+ * for the current artifact type (text, image, sheet, etc).
+ */
+
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { artifactDefinitions } from './artifact';

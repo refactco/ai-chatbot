@@ -1,12 +1,12 @@
 'use client';
 
-import type { Message } from 'ai';
+import type { Message } from '@/lib/api/types';
 import { Button } from './ui/button';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/actions';
-import type { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@/lib/api/types';
 
 export type MessageEditorProps = {
   message: Message;
@@ -76,7 +76,7 @@ export function MessageEditor({
               id: message.id,
             });
 
-            // @ts-expect-error todo: support UIMessage in setMessages
+            // todo: support UIMessage in setMessages
             setMessages((messages) => {
               const index = messages.findIndex((m) => m.id === message.id);
 

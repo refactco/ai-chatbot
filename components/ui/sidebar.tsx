@@ -1,3 +1,21 @@
+/**
+ * Sidebar Component System
+ *
+ * This component provides a comprehensive, flexible sidebar navigation system.
+ * Features:
+ * - Responsive design with mobile drawer and desktop sidebar modes
+ * - Collapsible states (expanded, collapsed, icon-only, offcanvas)
+ * - Persistent state management with cookies
+ * - Keyboard shortcut support (Ctrl/Cmd+B)
+ * - Customizable width and positioning (left/right sides)
+ * - Nested menu components with tooltips for collapsed state
+ * - Highly composable pattern with specialized subcomponents
+ * - Smooth animations and transitions
+ *
+ * The sidebar serves as the primary navigation container throughout the application
+ * and adapts to different screen sizes and user preferences.
+ */
+
 'use client';
 
 import * as React from 'react';

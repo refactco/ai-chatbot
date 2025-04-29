@@ -1,3 +1,20 @@
+/**
+ * Document Preview Component
+ *
+ * This component provides a compact preview of document artifacts in the chat interface.
+ * Features:
+ * - Support for multiple artifact types (text, image, sheet)
+ * - Interactive fullscreen expansion capability
+ * - Loading state visualization with skeletons
+ * - Streaming content updates during generation
+ * - Type-specific rendering for different content formats
+ * - Optimized rendering with memoization
+ * - Local and API-based document handling
+ *
+ * This component serves as the inline preview of artifacts within the chat,
+ * with the ability to expand into the full artifact view when clicked.
+ */
+
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -11,16 +28,26 @@ import useSWR from 'swr';
 import { Editor } from './text-editor';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { useArtifact } from '@/hooks/use-artifact';
-import equal from 'fast-deep-equal';
 import { SpreadsheetEditor } from './sheet-editor';
 import { ImageEditor } from './image-editor';
+import equal from 'fast-deep-equal';
 
+/**
+ * Props for the DocumentPreview component
+ * @property isReadonly - Whether the document is in read-only mode
+ * @property result - Result data for document that was created
+ * @property args - Arguments passed to create the document
+ */
 interface DocumentPreviewProps {
   isReadonly: boolean;
   result?: any;
   args?: any;
 }
 
+/**
+ * Main document preview component
+ * Handles fetching, display, and interaction with document artifacts
+ */
 export function DocumentPreview({
   isReadonly,
   result,
@@ -38,6 +65,7 @@ export function DocumentPreview({
     !String(result.id).startsWith('text:') &&
     !String(result.id).startsWith('sheet:');
 
+  // Fetch document data from API if needed
   const { data: documents, isLoading: isDocumentsFetching } = useSWR<
     Array<Document>
   >(shouldFetchDocument ? `/api/document?id=${result.id}` : null, fetcher);
@@ -45,6 +73,7 @@ export function DocumentPreview({
   const previewDocument = useMemo(() => documents?.[0], [documents]);
   const hitboxRef = useRef<HTMLDivElement>(null);
 
+  // Update artifact bounding box for animation when opening in fullscreen
   useEffect(() => {
     const boundingBox = hitboxRef.current?.getBoundingClientRect();
 
@@ -61,6 +90,7 @@ export function DocumentPreview({
     }
   }, [artifact.documentId, setArtifact]);
 
+  // If the artifact is already visible, show appropriate components
   if (artifact.isVisible) {
     if (result) {
       return (
@@ -83,6 +113,7 @@ export function DocumentPreview({
     }
   }
 
+  // Show loading skeleton while fetching document data
   if (isDocumentsFetching) {
     return (
       <LoadingSkeleton artifactKind={result?.kind || args?.kind || 'text'} />
@@ -133,8 +164,13 @@ export function DocumentPreview({
   );
 }
 
+/**
+ * Loading skeleton component for document previews
+ * Shows appropriate placeholder based on artifact type
+ */
 const LoadingSkeleton = ({ artifactKind }: { artifactKind: ArtifactKind }) => (
   <div className="w-full">
+    {/* Header skeleton with pulsing elements */}
     <div className="p-4 border rounded-t-2xl flex flex-row gap-2 items-center justify-between dark:bg-muted h-[57px] dark:border-zinc-700 border-b-0">
       <div className="flex flex-row items-center gap-3">
         <div className="text-muted-foreground">
@@ -146,6 +182,7 @@ const LoadingSkeleton = ({ artifactKind }: { artifactKind: ArtifactKind }) => (
         <FullscreenIcon />
       </div>
     </div>
+    {/* Content skeleton differs by artifact type */}
     {artifactKind === 'image' ? (
       <div className="overflow-y-scroll border rounded-b-2xl bg-muted border-t-0 dark:border-zinc-700">
         <div className="animate-pulse h-[257px] bg-muted-foreground/20 w-full" />
@@ -158,6 +195,10 @@ const LoadingSkeleton = ({ artifactKind }: { artifactKind: ArtifactKind }) => (
   </div>
 );
 
+/**
+ * Invisible hitbox layer that handles clicks to expand the document
+ * Captures position and dimensions for animation when expanding
+ */
 const PureHitboxLayer = ({
   hitboxRef,
   result,
@@ -239,11 +280,18 @@ const PureHitboxLayer = ({
   );
 };
 
+/**
+ * Memoized hitbox layer to prevent unnecessary re-renders
+ * Only updates when the result data changes
+ */
 const HitboxLayer = memo(PureHitboxLayer, (prevProps, nextProps) => {
-  if (!equal(prevProps.result, nextProps.result)) return false;
-  return true;
+  return equal(prevProps.result, nextProps.result);
 });
 
+/**
+ * Document header showing title and type icon
+ * Displays loading animation during streaming
+ */
 const PureDocumentHeader = ({
   title,
   kind,
@@ -272,6 +320,10 @@ const PureDocumentHeader = ({
   </div>
 );
 
+/**
+ * Memoized document header component
+ * Only re-renders when title or streaming state changes
+ */
 const DocumentHeader = memo(PureDocumentHeader, (prevProps, nextProps) => {
   if (prevProps.title !== nextProps.title) return false;
   if (prevProps.isStreaming !== nextProps.isStreaming) return false;
@@ -279,9 +331,14 @@ const DocumentHeader = memo(PureDocumentHeader, (prevProps, nextProps) => {
   return true;
 });
 
+/**
+ * Document content display based on artifact type
+ * Renders appropriate editor for each content format
+ */
 const DocumentContent = ({ document }: { document: Document }) => {
   const { artifact } = useArtifact();
 
+  // Apply different styling based on document type
   const containerClassName = cn(
     'h-[257px] overflow-y-scroll border rounded-b-2xl dark:bg-muted border-t-0 dark:border-zinc-700',
     {
@@ -290,6 +347,7 @@ const DocumentContent = ({ document }: { document: Document }) => {
     },
   );
 
+  // Common props for all editor types
   const commonProps = {
     content: document.content ?? '',
     isCurrentVersion: true,
@@ -301,6 +359,7 @@ const DocumentContent = ({ document }: { document: Document }) => {
 
   return (
     <div className={containerClassName}>
+      {/* Render appropriate editor based on document kind */}
       {document.kind === 'text' ? (
         <Editor {...commonProps} onSaveContent={() => {}} />
       ) : document.kind === 'sheet' ? (

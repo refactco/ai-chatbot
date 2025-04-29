@@ -1,7 +1,19 @@
+/**
+ * Global CSS Styles
+ * 
+ * This file contains global styles for the application including:
+ * - Tailwind CSS base, components, and utilities
+ * - CSS variables for theming (light and dark mode)
+ * - Custom utility classes for components
+ * - Special styling for the code editor, text editor, and UI components
+ * - Animation and skeleton loading styles
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Base color variables for light/dark mode */
 :root {
     --foreground-rgb: 0, 0, 0;
     --background-start-rgb: 214, 219, 220;
@@ -16,12 +28,14 @@
     }
 }
 
+/* Text balancing utility */
 @layer utilities {
     .text-balance {
         text-wrap: balance;
     }
 }
 
+/* Theme variables for light mode */
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -58,6 +72,8 @@
         --sidebar-border: 220 13% 91%;
         --sidebar-ring: 217.2 91.2% 59.8%;
     }
+    
+    /* Theme variables for dark mode */
     .dark {
         --background: 240 10% 3.9%;
         --foreground: 0 0% 98%;
@@ -94,6 +110,7 @@
     }
 }
 
+/* Base styles */
 @layer base {
     * {
         @apply border-border;
@@ -104,6 +121,7 @@
     }
 }
 
+/* Skeleton loading animation styles */
 .skeleton {
     * {
         pointer-events: none !important;
@@ -123,10 +141,12 @@
     }
 }
 
+/* ProseMirror text editor styles */
 .ProseMirror {
     outline: none;
 }
 
+/* CodeMirror code editor styles */
 .cm-editor,
 .cm-gutters {
     @apply bg-background dark:bg-zinc-800 outline-none selection:bg-zinc-900 !important;
@@ -159,6 +179,7 @@
     @apply rounded-l-sm !important;
 }
 
+/* Auto-suggestion highlight styles */
 .suggestion-highlight {
     @apply bg-blue-200 hover:bg-blue-300 dark:hover:bg-blue-400/50 dark:text-blue-50 dark:bg-blue-500/40;
 }

@@ -1,3 +1,20 @@
+/**
+ * Sidebar History Component
+ *
+ * This component displays a chronologically grouped list of past chat conversations.
+ * Features:
+ * - Time-based grouping (Today, Yesterday, Last 7 Days, Last 30 Days, Older)
+ * - Loading skeletons during data fetching with variable widths
+ * - Empty state handling with informative message
+ * - Chat history retrieval from mock API service
+ * - Deletion functionality with confirmation dialog and toast notifications
+ * - Current chat highlighting with active state styling
+ * - Mobile-responsive behavior with sidebar state management
+ *
+ * This component is rendered in the sidebar to provide navigation between
+ * previous conversations and history management capabilities.
+ */
+
 'use client';
 
 import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
@@ -21,8 +38,15 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { ChatItem } from './sidebar-history-item';
-import { mockApiService, type ChatSummary } from '@/lib/services/mock-api-service';
+import {
+  mockApiService,
+  type ChatSummary,
+} from '@/lib/services/mock-api-service';
 
+/**
+ * Structure for grouping chats by date categories
+ * Each property contains an array of chat summaries belonging to that time period
+ */
 type GroupedChats = {
   today: ChatSummary[];
   yesterday: ChatSummary[];
@@ -31,13 +55,24 @@ type GroupedChats = {
   older: ChatSummary[];
 };
 
+/**
+ * Interface representing the chat history data structure
+ * @property chats - Array of chat summary objects
+ * @property hasMore - Flag indicating if more chats are available to load
+ */
 export interface ChatHistory {
   chats: Array<ChatSummary>;
   hasMore: boolean;
 }
 
+// Number of chats to fetch per page
 const PAGE_SIZE = 20;
 
+/**
+ * Organizes chat summaries into time-based groups
+ * @param chats - Array of chat summaries to categorize
+ * @returns Object with chats grouped by time periods
+ */
 const groupChatsByDate = (chats: ChatSummary[]): GroupedChats => {
   const now = new Date();
   const oneWeekAgo = subWeeks(now, 1);
@@ -71,8 +106,13 @@ const groupChatsByDate = (chats: ChatSummary[]): GroupedChats => {
   );
 };
 
+/**
+ * Generates a cache key for SWR pagination
+ * @param pageIndex - Page number to generate key for
+ * @returns Array containing the resource type and page index
+ */
 export function getChatHistoryPaginationKey(pageIndex: number) {
-  return ['chatHistory', pageIndex]; // Return an array with the resource type and page index
+  return ['chatHistory', pageIndex];
 }
 
 export function SidebarHistory() {
@@ -85,7 +125,7 @@ export function SidebarHistory() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Fetch chat history from our mock API
+  // Fetch chat history from mock API on initial load
   useEffect(() => {
     const fetchChatHistory = async () => {
       try {
@@ -102,6 +142,11 @@ export function SidebarHistory() {
     fetchChatHistory();
   }, []);
 
+  /**
+   * Handles chat deletion with toast notification feedback
+   * Uses optimistic update pattern to immediately update UI
+   * Redirects to home page if current chat is deleted
+   */
   const handleDelete = async () => {
     toast.promise(
       new Promise((resolve) => {
@@ -122,14 +167,16 @@ export function SidebarHistory() {
 
     setShowDeleteDialog(false);
 
+    // Navigate to home if deleted the current chat
     if (deleteId === id) {
       router.push('/');
     }
   };
 
-  // Determine if the history is empty
+  // Determine if the history is empty for conditional rendering
   const hasEmptyChatHistory = chatHistory.length === 0;
 
+  // Show loading skeleton while data is being fetched
   if (isLoading) {
     return (
       <SidebarGroup>
@@ -138,6 +185,7 @@ export function SidebarHistory() {
         </div>
         <SidebarGroupContent>
           <div className="flex flex-col">
+            {/* Variable-width skeleton items to simulate chat titles */}
             {[44, 32, 28, 64, 52].map((item) => (
               <div
                 key={item}
@@ -159,6 +207,7 @@ export function SidebarHistory() {
     );
   }
 
+  // Show empty state message when no chats exist
   if (hasEmptyChatHistory) {
     return (
       <SidebarGroup>
@@ -171,16 +220,19 @@ export function SidebarHistory() {
     );
   }
 
+  // Render grouped chat history list
   return (
     <>
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
             {(() => {
+              // Group chats by date categories
               const groupedChats = groupChatsByDate(chatHistory);
 
               return (
                 <div className="flex flex-col gap-6">
+                  {/* Today's chats section */}
                   {groupedChats.today.length > 0 && (
                     <div>
                       <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
@@ -201,6 +253,7 @@ export function SidebarHistory() {
                     </div>
                   )}
 
+                  {/* Yesterday's chats section */}
                   {groupedChats.yesterday.length > 0 && (
                     <div>
                       <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
@@ -221,6 +274,7 @@ export function SidebarHistory() {
                     </div>
                   )}
 
+                  {/* Last 7 days chats section */}
                   {groupedChats.lastWeek.length > 0 && (
                     <div>
                       <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
@@ -241,6 +295,7 @@ export function SidebarHistory() {
                     </div>
                   )}
 
+                  {/* Last 30 days chats section */}
                   {groupedChats.lastMonth.length > 0 && (
                     <div>
                       <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
@@ -261,6 +316,7 @@ export function SidebarHistory() {
                     </div>
                   )}
 
+                  {/* Older chats section */}
                   {groupedChats.older.length > 0 && (
                     <div>
                       <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
@@ -287,6 +343,7 @@ export function SidebarHistory() {
         </SidebarGroupContent>
       </SidebarGroup>
 
+      {/* Confirmation dialog for chat deletion */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

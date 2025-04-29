@@ -1,3 +1,17 @@
+/**
+ * Next.js Configuration
+ *
+ * This file configures Next.js framework settings for the application.
+ * Features:
+ * - Parallel Route Rendering (PPR) experimental flag
+ * - Remote image pattern allowlist
+ * - Development indicators configuration
+ * - Webpack configuration for MSW (Mock Service Worker)
+ *
+ * The configuration enables proper functioning of the application
+ * with necessary optimizations and integrations.
+ */
+
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -27,7 +41,7 @@ const nextConfig: NextConfig = {
         'msw/node': false,
       };
     }
-    
+
     return config;
   },
 };

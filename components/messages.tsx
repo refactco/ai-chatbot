@@ -1,3 +1,19 @@
+/**
+ * Messages Component
+ *
+ * This component displays the chat message history.
+ * Features:
+ * - Auto-scrolling to the latest message
+ * - Thinking indicator for in-progress responses
+ * - Empty state with welcome greeting
+ * - Performance optimized with memoization
+ * - Support for readonly mode in shared chats
+ * - Loading states for messages being streamed
+ *
+ * This is the main container for all chat messages and
+ * handles the overall message list rendering and behavior.
+ */
+
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
@@ -15,6 +31,10 @@ interface MessagesProps {
   isArtifactVisible: boolean;
 }
 
+/**
+ * Main messages container component
+ * Renders the full chat history and handles scrolling behavior
+ */
 function PureMessages({
   chatId,
   status,
@@ -28,6 +48,7 @@ function PureMessages({
   const compatibleSetMessages = setMessages as any;
   const compatibleReload = reload as any;
 
+  // Setup auto-scrolling behavior
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
@@ -36,8 +57,10 @@ function PureMessages({
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
     >
+      {/* Show greeting for empty chats */}
       {compatibleMessages.length === 0 && <Greeting />}
 
+      {/* Render all messages in the chat */}
       {compatibleMessages.map((message: any, index: number) => {
         // Ensure each message has a unique key, using message.id if available,
         // or a combination of role, content, and index as fallback
@@ -60,12 +83,14 @@ function PureMessages({
         );
       })}
 
+      {/* Show thinking indicator when waiting for response */}
       {status === 'submitted' &&
         compatibleMessages.length > 0 &&
         compatibleMessages[compatibleMessages.length - 1].role === 'user' && (
           <ThinkingMessage key="thinking-message" />
         )}
 
+      {/* Auto-scroll anchor element */}
       <div
         ref={messagesEndRef}
         className="shrink-0 min-w-[24px] min-h-[24px]"
@@ -74,6 +99,10 @@ function PureMessages({
   );
 }
 
+/**
+ * Memoized messages component for performance optimization
+ * Prevents unnecessary re-renders when artifact state changes
+ */
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   if (prevProps.isArtifactVisible && nextProps.isArtifactVisible) return true;
 

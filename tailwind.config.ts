@@ -1,3 +1,19 @@
+/**
+ * Tailwind CSS Configuration
+ *
+ * This file defines the styling framework for the application.
+ * Features:
+ * - Dark mode support with class-based toggling
+ * - Custom color scheme with CSS variables
+ * - Extended font families with variable fonts
+ * - Theme extension with consistent design tokens
+ * - Custom screen breakpoints for responsive design
+ * - Integration with animation and typography plugins
+ *
+ * The configuration establishes a consistent design system across the application,
+ * with special consideration for dark mode, theming, and component styling.
+ */
+
 import type { Config } from 'tailwindcss';
 
 const config: Config = {

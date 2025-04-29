@@ -1,3 +1,15 @@
+/**
+ * Registration Page Component
+ *
+ * This component renders the sign-up form for new user registration.
+ * Features:
+ * - Email and password input fields
+ * - Sign up button that redirects to the login page
+ * - Link to the login page for existing users
+ *
+ * Note: This is a static demo page with no actual registration functionality.
+ */
+
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

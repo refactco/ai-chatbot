@@ -1,3 +1,15 @@
+/**
+ * Login Page Component
+ *
+ * This component renders the login form for user authentication.
+ * Features:
+ * - Email and password input fields
+ * - Sign in button that redirects to the home page
+ * - Link to the registration page for new users
+ *
+ * Note: This is a static demo page with no actual authentication functionality.
+ */
+
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

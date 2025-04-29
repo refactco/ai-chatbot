@@ -1,3 +1,19 @@
+/**
+ * Tooltip Component
+ *
+ * This component provides tooltip functionality for displaying additional information
+ * when users hover over or focus on an element.
+ *
+ * Features:
+ * - Accessible tooltip implementation
+ * - Animated transitions
+ * - Customizable positioning
+ * - Flexible content support
+ * - Keyboard navigation support
+ *
+ * Based on Radix UI's Tooltip primitive with custom styling and animations.
+ */
+
 'use client';
 
 import * as React from 'react';
@@ -5,12 +21,28 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Provider component that enables tooltips to function correctly
+ * Should be used at the application root level
+ */
 const TooltipProvider = TooltipPrimitive.Provider;
 
+/**
+ * Root tooltip component that manages state and child components
+ */
 const Tooltip = TooltipPrimitive.Root;
 
+/**
+ * Trigger element that causes the tooltip to appear when hovered or focused
+ */
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+/**
+ * Content component for the tooltip that appears when triggered
+ *
+ * @param props - Component properties including custom className and positioning
+ * @returns Styled tooltip content component
+ */
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>

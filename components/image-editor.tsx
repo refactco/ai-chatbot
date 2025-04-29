@@ -1,3 +1,18 @@
+/**
+ * Image Editor Component
+ *
+ * This component displays and manages AI-generated images.
+ * Features:
+ * - Support for different image formats (data URLs, http URLs, base64)
+ * - Loading state during image generation
+ * - Responsive sizing with inline or full-screen modes
+ * - Placeholder images when no content is available
+ * - Proper image tagging for accessibility
+ *
+ * This component handles the display of generated images within the
+ * artifact system, including streaming states and proper formatting.
+ */
+
 import { LoaderIcon } from './icons';
 import cn from 'classnames';
 import { useMemo } from 'react';
@@ -21,7 +36,10 @@ export function ImageEditor({
   status,
   isInline,
 }: ImageEditorProps) {
-  // Create a stable image source that won't change on re-renders
+  /**
+   * Create a stable image source that won't change on re-renders
+   * Handles different content formats (URL, data URL, base64)
+   */
   const imageSrc = useMemo(() => {
     // If no content or empty string, use placeholder
     if (!content || content.trim() === '') {
@@ -49,6 +67,7 @@ export function ImageEditor({
         'h-[200px]': isInline,
       })}
     >
+      {/* Show loading indicator during streaming */}
       {status === 'streaming' ? (
         <div className="flex flex-row gap-4 items-center">
           {!isInline && (
@@ -59,6 +78,7 @@ export function ImageEditor({
           <div>Generating Image...</div>
         </div>
       ) : (
+        // Show image when content is available
         <picture>
           <img
             className={cn('w-full h-fit max-w-[800px]', {

@@ -1,3 +1,20 @@
+/**
+ * App Sidebar Component
+ *
+ * This component implements the application's main navigation sidebar.
+ * Features:
+ * - Application branding in the header
+ * - New chat button for starting conversations
+ * - Chat history display with time-based grouping
+ * - User profile and settings in the footer
+ * - Mobile responsive design with automatic closing on navigation
+ * - Tooltip-enhanced navigation elements
+ *
+ * This component serves as the main container for sidebar content,
+ * combining the header, history, and user navigation elements into
+ * a cohesive sidebar interface.
+ */
+
 'use client';
 
 import type { User } from 'next-auth';
@@ -61,7 +78,17 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <SidebarContent>
         <SidebarHistory />
       </SidebarContent>
-      <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+      <SidebarFooter>
+        {user?.email && (
+          <SidebarUserNav
+            user={{
+              email: user.email,
+              name: user.name || undefined,
+              image: user.image || undefined,
+            }}
+          />
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

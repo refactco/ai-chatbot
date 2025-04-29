@@ -1,3 +1,18 @@
+/**
+ * Sidebar User Navigation Component
+ *
+ * This component displays the current user profile and provides account-related actions.
+ * Features:
+ * - Shows user avatar and email in the sidebar footer
+ * - Provides a dropdown menu with user-related actions
+ * - Includes theme toggling functionality
+ * - Provides sign out capability with success notification
+ * - Mobile-responsive design
+ *
+ * Used in the sidebar footer to give users quick access to account settings
+ * and personalization options.
+ */
+
 'use client';
 import { ChevronUp } from 'lucide-react';
 import Image from 'next/image';

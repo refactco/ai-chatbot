@@ -1,3 +1,18 @@
+/**
+ * Data Stream Handler Component
+ *
+ * This component manages the streaming of data from the AI to artifact components.
+ * Features:
+ * - Processes different types of delta updates (text, code, image, etc.)
+ * - Updates artifact state based on incoming stream parts
+ * - Handles artifact transitions between streaming and idle states
+ * - Provides a global interface for external components to add stream deltas
+ * - Delegates type-specific stream handling to artifact type definitions
+ *
+ * This component acts as a bridge between the streaming API responses
+ * and the artifact rendering system, ensuring consistent state updates.
+ */
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -10,6 +25,9 @@ interface Suggestion {
   text: string;
 }
 
+/**
+ * Delta update types for different streaming content formats
+ */
 export type DataStreamDelta = {
   type:
     | 'text-delta'
@@ -31,6 +49,10 @@ export function DataStreamHandler({ id }: { id: string }) {
   const { artifact, setArtifact, setMetadata } = useArtifact();
   const lastProcessedIndex = useRef(-1);
 
+  /**
+   * Process new deltas when dataStream changes
+   * Updates artifact state based on delta types
+   */
   useEffect(() => {
     if (!dataStream?.length) return;
 
@@ -97,8 +119,10 @@ export function DataStreamHandler({ id }: { id: string }) {
     });
   }, [dataStream, setArtifact, setMetadata, artifact]);
 
-  // We'll add a method to update the data stream from outside
-  // This will be important when we integrate with the real API
+  /**
+   * Expose methods to window for external components to add stream deltas
+   * Adds and clears stream data through a global interface
+   */
   useEffect(() => {
     // Add the component to the window so it can be accessed from outside
     if (typeof window !== 'undefined') {

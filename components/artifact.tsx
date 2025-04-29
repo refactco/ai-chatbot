@@ -1,3 +1,21 @@
+/**
+ * Artifact Component
+ *
+ * This component manages specialized content types like text documents, images, and sheets.
+ * It provides a full-featured editor with version control capabilities.
+ *
+ * Features:
+ * - Support for multiple artifact types (text, image, sheet)
+ * - Version history management with diffs
+ * - Dual storage approach (API and localStorage)
+ * - Toolbar with formatting controls
+ * - Collaboration features
+ * - File imports and exports
+ *
+ * The artifact component is a central piece of the application enabling
+ * rich content creation and management alongside the chat interface.
+ */
+
 import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -27,9 +45,17 @@ import { sheetArtifact } from '@/artifacts/sheet/client';
 import { textArtifact } from '@/artifacts/text/client';
 import equal from 'fast-deep-equal';
 
+/**
+ * Available artifact type definitions
+ * Each artifact type has its own implementation
+ */
 export const artifactDefinitions = [textArtifact, imageArtifact, sheetArtifact];
 export type ArtifactKind = (typeof artifactDefinitions)[number]['kind'];
 
+/**
+ * UI state for an artifact
+ * Contains display properties and content information
+ */
 export interface UIArtifact {
   title: string;
   documentId: string;
@@ -45,6 +71,10 @@ export interface UIArtifact {
   };
 }
 
+/**
+ * Props for the Artifact component
+ * Includes chat state and handlers
+ */
 export interface ArtifactProps {
   chatId: string;
   input: string;
@@ -115,13 +145,19 @@ function PureArtifact({
       actualDocumentId.startsWith('text:') ||
       actualDocumentId.startsWith('sheet:'));
 
-  // Get local document versions from localStorage
+  /**
+   * Local storage key for document versions
+   * Used for persisting version history locally
+   */
   const localStorageKey = useMemo(
     () => `local-document-${actualDocumentId}`,
     [actualDocumentId],
   );
 
-  // Load document versions from localStorage on first render
+  /**
+   * Load documents from localStorage on first render
+   * Creates initial version if none exists
+   */
   const loadLocalDocuments = useCallback(() => {
     if (useLocalDocument) {
       try {
@@ -164,7 +200,9 @@ function PureArtifact({
     loadLocalDocuments,
   );
 
-  // Save local documents to localStorage when they change
+  /**
+   * Save local documents to localStorage when they change
+   */
   useEffect(() => {
     if (useLocalDocument && localDocuments) {
       try {
@@ -175,7 +213,9 @@ function PureArtifact({
     }
   }, [useLocalDocument, localDocuments, localStorageKey]);
 
-  // Only fetch from API for non-local documents
+  /**
+   * Fetch documents from API for non-local storage
+   */
   const {
     data: apiDocuments,
     isLoading: isDocumentsFetching,
@@ -190,7 +230,10 @@ function PureArtifact({
   // Use either API documents or local documents
   const documents = useLocalDocument ? localDocuments : apiDocuments;
 
-  // Custom mutate function that works for both API and local documents
+  /**
+   * Custom mutate function that works for both API and local documents
+   * Allows unified document updating regardless of storage type
+   */
   const mutateDocumentsWrapper = useCallback(
     (
       updaterFn?: (current: Document[] | undefined) => Document[] | undefined,
@@ -438,6 +481,7 @@ function PureArtifact({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { delay: 0.4 } }}
         >
+          {/* Desktop background layer */}
           {!isMobile && (
             <motion.div
               className="fixed bg-background h-dvh"
@@ -453,6 +497,7 @@ function PureArtifact({
             />
           )}
 
+          {/* Message sidebar panel */}
           {!isMobile && (
             <motion.div
               className="relative w-[400px] bg-muted dark:bg-background h-dvh shrink-0"
@@ -487,6 +532,7 @@ function PureArtifact({
               </AnimatePresence>
 
               <div className="flex flex-col h-full justify-between items-center gap-4">
+                {/* Messages display */}
                 <ArtifactMessages
                   chatId={chatId}
                   status={status}
@@ -497,6 +543,7 @@ function PureArtifact({
                   artifactStatus={artifact.status}
                 />
 
+                {/* Message input form */}
                 <form className="flex flex-row gap-2 relative items-end w-full px-4 pb-4">
                   <MultimodalInput
                     chatId={chatId}
@@ -517,6 +564,7 @@ function PureArtifact({
             </motion.div>
           )}
 
+          {/* Main artifact content panel */}
           <motion.div
             className="fixed dark:bg-muted bg-background h-dvh flex flex-col overflow-y-scroll md:border-l dark:border-zinc-700 border-zinc-200"
             initial={
@@ -584,6 +632,7 @@ function PureArtifact({
               },
             }}
           >
+            {/* Artifact header section */}
             <div className="p-2 flex flex-row justify-between items-start">
               <div className="flex flex-row gap-4 items-start">
                 <ArtifactCloseButton />
@@ -622,6 +671,7 @@ function PureArtifact({
               />
             </div>
 
+            {/* Artifact content area */}
             <div className="dark:bg-muted bg-background h-full overflow-y-scroll !max-w-full items-center">
               <artifactDefinition.content
                 title={artifact.title}
@@ -643,6 +693,7 @@ function PureArtifact({
                 setMetadata={setMetadata}
               />
 
+              {/* Content toolbar */}
               <AnimatePresence>
                 {isCurrentVersion && (
                   <Toolbar
@@ -658,6 +709,7 @@ function PureArtifact({
               </AnimatePresence>
             </div>
 
+            {/* Version history footer */}
             <AnimatePresence>
               {!isCurrentVersion && (
                 <VersionFooter

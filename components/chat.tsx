@@ -1,3 +1,20 @@
+/**
+ * Chat Component
+ *
+ * This component serves as the main orchestrator for the chat interface.
+ * It manages the chat state, message submission, and UI rendering.
+ *
+ * Features:
+ * - Message state management and rendering
+ * - Integration with mock API service
+ * - File attachment handling
+ * - Streaming response processing
+ * - Artifact integration
+ *
+ * This component acts as the central hub for all chat-related functionality,
+ * connecting the UI components with the backend services.
+ */
+
 'use client';
 
 import type { Attachment, UIMessage } from '@/lib/api/types';
@@ -26,10 +43,13 @@ export function Chat({
 }) {
   const { mutate } = useSWRConfig();
 
+  /**
+   * Initialize chat state using the useChat hook
+   * This provides core functionality for message management
+   */
   const {
     messages,
     setMessages,
-    handleSubmit,
     input,
     setInput,
     append,
@@ -55,7 +75,10 @@ export function Chat({
     (state: { isVisible: boolean }) => state.isVisible,
   );
 
-  // Custom handleSubmit to use our mock API
+  /**
+   * Custom submit handler that uses the mock API service
+   * Manages user message submission and AI response streaming
+   */
   const customHandleSubmit = async (
     event?: { preventDefault?: () => void },
     options?: any,
@@ -169,6 +192,7 @@ export function Chat({
 
   return (
     <>
+      {/* Main chat container with messages and input */}
       <div className="flex flex-col min-w-0 h-dvh bg-background">
         <ChatHeader chatId={id} isReadonly={isReadonly} />
 
@@ -204,6 +228,7 @@ export function Chat({
         </form>
       </div>
 
+      {/* Artifact panel for document viewing/editing */}
       <Artifact
         chatId={id}
         input={input}

@@ -1,3 +1,16 @@
+/**
+ * Chat Action Functions
+ *
+ * This file contains client-side utility functions for chat management:
+ * - Saving user preferences to browser storage
+ * - Generating chat titles from messages
+ * - Managing message history
+ * - Updating chat visibility settings
+ *
+ * These functions handle local storage operations and provide consistent
+ * interfaces for performing common actions across the chat application.
+ */
+
 'use client';
 
 import type { Message } from '@/lib/services/api-service';
@@ -5,7 +18,10 @@ import type { Message } from '@/lib/services/api-service';
 // Type definition for visibility
 export type VisibilityType = 'private' | 'public' | 'unlisted';
 
-// Save chat model preference to cookie
+/**
+ * Saves the user's preferred chat model to browser storage
+ * @param model - The model identifier to save
+ */
 export function saveChatModelAsCookie(model: string) {
   if (typeof window === 'undefined') return;
 
@@ -14,7 +30,11 @@ export function saveChatModelAsCookie(model: string) {
   localStorage.setItem('chat-model', model);
 }
 
-// Generate a title from a user message
+/**
+ * Generates a chat title from the first user message
+ * @param message - The user message to extract title from
+ * @returns A string title created from the first few words of the message
+ */
 export function generateTitleFromUserMessage({
   message,
 }: {
@@ -33,7 +53,10 @@ export function generateTitleFromUserMessage({
   return titleWords.join(' ');
 }
 
-// Delete trailing messages
+/**
+ * Deletes all messages that come after a specified message in a chat
+ * @param id - The ID of the message after which all messages should be deleted
+ */
 export function deleteTrailingMessages({ id }: { id: string }) {
   if (typeof window === 'undefined') return;
 
@@ -60,7 +83,11 @@ export function deleteTrailingMessages({ id }: { id: string }) {
   localStorage.setItem('messages', JSON.stringify(filteredMessages));
 }
 
-// Update chat visibility
+/**
+ * Updates the visibility setting for a specific chat
+ * @param chatId - The ID of the chat to update
+ * @param visibility - The new visibility setting (private, public, or unlisted)
+ */
 export function updateChatVisibility({
   chatId,
   visibility,

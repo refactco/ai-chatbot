@@ -1,100 +1,172 @@
-import OrderedMap from 'orderedmap';
-import {
-  Schema,
-  type Node as ProsemirrorNode,
-  type MarkSpec,
-  DOMParser,
-} from 'prosemirror-model';
-import { schema } from 'prosemirror-schema-basic';
-import { addListNodes } from 'prosemirror-schema-list';
-import { EditorState } from 'prosemirror-state';
-import { EditorView } from 'prosemirror-view';
-import React, { useEffect, useRef } from 'react';
-import { renderToString } from 'react-dom/server';
-import ReactMarkdown from 'react-markdown';
+/**
+ * DiffView Component
+ *
+ * This component provides a visual representation of differences between document versions.
+ * It highlights insertions, deletions, and unchanged content for comparison.
+ *
+ * Features:
+ * - Visual diff highlighting with color coding
+ * - Support for rich text documents
+ * - Integration with ProseMirror document model
+ * - Style customization for different diff types
+ * - Readonly mode for viewing-only scenarios
+ *
+ * This component is used in the version history feature to show
+ * what has changed between document revisions.
+ */
+
+'use client';
 
 import { diffEditor, DiffType } from '@/lib/editor/diff';
+import { PencilEditIcon, EyeIcon } from '@/components/icons';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { schema } from 'prosemirror-schema-basic';
+import { EditorState } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { buildDocumentFromContent } from '@/lib/editor/functions';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import type { Mark } from 'prosemirror-model';
 
-const diffSchema = new Schema({
-  nodes: addListNodes(schema.spec.nodes, 'paragraph block*', 'block'),
-  marks: OrderedMap.from({
-    ...schema.spec.marks.toObject(),
-    diffMark: {
-      attrs: { type: { default: '' } },
-      toDOM(mark) {
-        let className = '';
+/**
+ * Creates a schema for the ProseMirror editor with diff mark support
+ *
+ * @returns ProseMirror schema with diffMark type
+ */
+const getDiffSchema = () => {
+  const diffSchema = schema;
 
-        switch (mark.attrs.type) {
-          case DiffType.Inserted:
-            className =
-              'bg-green-100 text-green-700 dark:bg-green-500/70 dark:text-green-300';
-            break;
-          case DiffType.Deleted:
-            className =
-              'bg-red-100 line-through text-red-600 dark:bg-red-500/70 dark:text-red-300';
-            break;
-          default:
-            className = '';
-        }
-        return ['span', { class: className }, 0];
-      },
-    } as MarkSpec,
-  }),
-});
+  // Add a mark for diffing
+  diffSchema.spec.marks = diffSchema.spec.marks.addToEnd('diffMark', {
+    attrs: {
+      type: { default: 0 },
+    },
+    toDOM(mark: Mark) {
+      const { type } = mark.attrs;
 
-function computeDiff(oldDoc: ProsemirrorNode, newDoc: ProsemirrorNode) {
-  return diffEditor(diffSchema, oldDoc.toJSON(), newDoc.toJSON());
-}
+      // Apply different styling based on diff type
+      if (type === DiffType.Inserted) {
+        return [
+          'span',
+          {
+            class: 'diff-inserted',
+            style:
+              'background-color: rgba(0, 255, 0, 0.2); text-decoration: none;',
+          },
+          0,
+        ];
+      }
 
-type DiffEditorProps = {
-  oldContent: string;
-  newContent: string;
+      if (type === DiffType.Deleted) {
+        return [
+          'span',
+          {
+            class: 'diff-deleted',
+            style:
+              'background-color: rgba(255, 0, 0, 0.2); text-decoration: line-through;',
+          },
+          0,
+        ];
+      }
+
+      return ['span', { class: 'diff-unchanged' }, 0];
+    },
+  });
+
+  return diffSchema;
 };
 
-export const DiffView = ({ oldContent, newContent }: DiffEditorProps) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
+/**
+ * DiffView component that renders visual diffs between two document versions
+ *
+ * @param props - Component properties with old and new content
+ * @returns Visual diff viewer with edit/view controls
+ */
+function PureDiffView({
+  oldContent,
+  newContent,
+  isReadonly = false,
+}: {
+  oldContent: string;
+  newContent: string;
+  isReadonly?: boolean;
+}) {
+  const [mode, setMode] = useState<'diff' | 'view'>('diff');
+  const viewRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (editorRef.current && !viewRef.current) {
-      const parser = DOMParser.fromSchema(diffSchema);
+  /**
+   * Creates the ProseMirror editor view with diff highlighting
+   */
+  const createEditorView = useCallback(() => {
+    if (!viewRef.current) return;
 
-      const oldHtmlContent = renderToString(
-        <ReactMarkdown>{oldContent}</ReactMarkdown>,
-      );
-      const newHtmlContent = renderToString(
-        <ReactMarkdown>{newContent}</ReactMarkdown>,
-      );
+    // Clear any existing content
+    viewRef.current.innerHTML = '';
 
-      const oldContainer = document.createElement('div');
-      oldContainer.innerHTML = oldHtmlContent;
+    // Get our schema with diff mark support
+    const schema = getDiffSchema();
 
-      const newContainer = document.createElement('div');
-      newContainer.innerHTML = newHtmlContent;
+    try {
+      // Convert content to ProseMirror nodes
+      const oldDoc = buildDocumentFromContent(oldContent);
+      const newDoc = buildDocumentFromContent(newContent);
 
-      const oldDoc = parser.parse(oldContainer);
-      const newDoc = parser.parse(newContainer);
+      // Generate diff between old and new documents
+      const diffDoc = diffEditor(schema, oldDoc.toJSON(), newDoc.toJSON());
 
-      const diffedDoc = computeDiff(oldDoc, newDoc);
-
+      // Create editor state with the diff document
       const state = EditorState.create({
-        doc: diffedDoc,
-        plugins: [],
+        doc: diffDoc,
       });
 
-      viewRef.current = new EditorView(editorRef.current, {
+      // Create the editor view (readonly)
+      new EditorView(viewRef.current, {
         state,
         editable: () => false,
       });
+    } catch (error) {
+      console.error('Error creating diff view', error);
+      viewRef.current.innerHTML = '<div>Error displaying diff</div>';
     }
-
-    return () => {
-      if (viewRef.current) {
-        viewRef.current.destroy();
-        viewRef.current = null;
-      }
-    };
   }, [oldContent, newContent]);
 
-  return <div className="diff-editor" ref={editorRef} />;
-};
+  // Create the editor view when content or mode changes
+  useEffect(() => {
+    if (mode === 'diff') {
+      createEditorView();
+    } else {
+      if (viewRef.current) {
+        viewRef.current.innerHTML = '';
+        const contentToShow = `<div style="white-space: pre-wrap;">${newContent}</div>`;
+        viewRef.current.innerHTML = contentToShow;
+      }
+    }
+  }, [mode, createEditorView, newContent]);
+
+  return (
+    <div className="relative border rounded-md">
+      {!isReadonly && (
+        <div className="absolute right-2 top-2 z-10">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="rounded-full size-8 p-0"
+                onClick={() => setMode(mode === 'diff' ? 'view' : 'diff')}
+              >
+                {mode === 'diff' ? <EyeIcon /> : <PencilEditIcon />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {mode === 'diff' ? 'View content only' : 'View differences'}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      <div className="p-4 prose prose-sm max-w-none" ref={viewRef} />
+    </div>
+  );
+}
+
+export const DiffView = memo(PureDiffView);

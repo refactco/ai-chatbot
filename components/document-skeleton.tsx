@@ -1,7 +1,25 @@
+/**
+ * Document Skeleton Component
+ *
+ * This component provides loading placeholders for document content.
+ * Features:
+ * - Different skeleton layouts for different artifact types (image, text)
+ * - Animated pulse effect for better loading experience
+ * - Responsive sizing that matches final content dimensions
+ * - Inline variant for embedded document previews
+ * - Full-screen variant for standalone document views
+ *
+ * Used throughout the application to indicate loading states
+ * while document content is being fetched or generated.
+ */
+
 'use client';
 
 import type { ArtifactKind } from './artifact';
 
+/**
+ * Full-sized document skeleton with layout based on artifact type
+ */
 export const DocumentSkeleton = ({
   artifactKind,
 }: {
@@ -24,6 +42,9 @@ export const DocumentSkeleton = ({
   );
 };
 
+/**
+ * Compact skeleton used for inline document previews
+ */
 export const InlineDocumentSkeleton = () => {
   return (
     <div className="flex flex-col gap-4 w-full">

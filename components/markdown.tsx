@@ -1,8 +1,29 @@
+/**
+ * Markdown Component
+ *
+ * This component renders markdown content with custom styling and components.
+ * It provides consistent rendering of markdown throughout the application.
+ *
+ * Features:
+ * - Custom styling for all markdown elements
+ * - Support for GitHub Flavored Markdown
+ * - Memoization for performance optimization
+ * - Consistent heading hierarchy and styling
+ * - Custom link handling with proper attributes
+ *
+ * This component serves as the central rendering utility for all
+ * text content that requires markdown formatting.
+ */
+
 import Link from 'next/link';
 import React, { memo } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+/**
+ * Custom component mappings for markdown elements
+ * Provides consistent styling throughout the application
+ */
 const components: Partial<Components> = {
   ol: ({ node, children, ...props }) => {
     return (
@@ -89,8 +110,17 @@ const components: Partial<Components> = {
   },
 };
 
+/**
+ * Remark plugins for enhanced markdown support
+ */
 const remarkPlugins = [remarkGfm];
 
+/**
+ * Non-memoized version of the markdown component
+ *
+ * @param children - Markdown content to render as string
+ * @returns Rendered markdown as React elements
+ */
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   return (
     <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
@@ -99,6 +129,10 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   );
 };
 
+/**
+ * Memoized markdown component for performance optimization
+ * Only re-renders when the markdown content changes
+ */
 export const Markdown = memo(
   NonMemoizedMarkdown,
   (prevProps, nextProps) => prevProps.children === nextProps.children,
