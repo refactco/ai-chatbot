@@ -8,6 +8,7 @@
  * - Conditional rendering based on message role
  * - Success/error notifications via toast
  * - Memoized rendering for performance optimization
+ * - Copy button only visible on hover
  *
  * Currently displays only for assistant messages and provides
  * copy functionality, with architecture supporting additional
@@ -50,7 +51,7 @@ export function PureMessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              className="py-1 px-2 h-fit text-muted-foreground"
+              className="py-1 px-2 h-fit text-muted-foreground opacity-0 group-hover/message:opacity-100 transition-opacity"
               variant="outline"
               onClick={async () => {
                 if (!message.content) {
