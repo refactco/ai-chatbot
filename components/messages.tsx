@@ -16,9 +16,8 @@
 
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
 import { PreviewMessage, ThinkingMessage } from './message';
-import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Greeting } from './greeting';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import equal from 'fast-deep-equal';
 
 interface MessagesProps {
@@ -48,9 +47,9 @@ function PureMessages({
   const compatibleSetMessages = setMessages as any;
   const compatibleReload = reload as any;
 
-  // Setup auto-scrolling behavior
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+  // Simple refs without auto-scrolling
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
@@ -90,7 +89,7 @@ function PureMessages({
           <ThinkingMessage key="thinking-message" />
         )}
 
-      {/* Auto-scroll anchor element */}
+      {/* End anchor element */}
       <div
         ref={messagesEndRef}
         className="shrink-0 min-w-[24px] min-h-[24px]"

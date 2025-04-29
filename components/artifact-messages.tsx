@@ -4,7 +4,6 @@
  * This component displays the chat messages associated with an artifact.
  * Features:
  * - Renders message history specific to the active artifact
- * - Auto-scrolls to the latest message
  * - Displays appropriate loading states during message streaming
  * - Optimized rendering with memoization to prevent unnecessary rerenders
  * - Handles readonly mode for historical viewing
@@ -14,9 +13,8 @@
  */
 
 import { PreviewMessage } from './message';
-import { useScrollToBottom } from './use-scroll-to-bottom';
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import type { UIArtifact } from './artifact';
 
 interface ArtifactMessagesProps {
@@ -37,8 +35,8 @@ function PureArtifactMessages({
   reload,
   isReadonly,
 }: ArtifactMessagesProps) {
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
