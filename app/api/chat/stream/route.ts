@@ -32,16 +32,21 @@ export async function GET(request: NextRequest) {
     // Build the URL for the backend API
     const backendUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodeURIComponent(message)}`;
     
+    console.log('Proxying request to:', backendUrl);
+    
     // Forward the request to the backend
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     });
     
     // Check if the response is OK
     if (!response.ok) {
+      console.error('Error from backend:', response.statusText);
       return NextResponse.json(
         { error: `Error from backend: ${response.statusText}` }, 
         { status: response.status }
@@ -63,9 +68,14 @@ export async function GET(request: NextRequest) {
             const { done, value } = await reader.read();
             
             if (done) {
+              console.log('Stream completed');
               controller.close();
               break;
             }
+            
+            // Log the data being forwarded (for debugging)
+            const textChunk = new TextDecoder().decode(value);
+            console.log('Forwarding chunk:', textChunk);
             
             // Forward the chunk to the client
             controller.enqueue(value);

@@ -437,15 +437,15 @@ export const apiService = {
       let assistantMessage: ChatMessage | null = null;
       let messageCount = 0;
       
-      // Handle the different event types from the API
-      eventSource.addEventListener('delta', (event) => {
+      // Process raw event data
+      const handleEvent = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           messageCount++;
           console.log('Event data:', data);
           
           // Generate a unique ID for this message
-          const messageId = `msg-${messageCount}-${Date.now()}`;
+          const messageId = `msg-${data.type}-${messageCount}-${Date.now()}`;
           
           switch (data.type) {
             case 'system_prompt':
@@ -541,7 +541,13 @@ export const apiService = {
         } catch (e) {
           console.error('Error parsing stream chunk:', e, event.data);
         }
-      });
+      };
+      
+      // Handle the different event types from the API
+      eventSource.addEventListener('delta', handleEvent);
+      
+      // Also listen to the generic message event as a fallback
+      eventSource.onmessage = handleEvent;
       
       // Handle completion of the stream
       eventSource.addEventListener('end', (event) => {
