@@ -96,16 +96,89 @@ const components: Partial<Components> = {
   },
   h5: ({ node, children, ...props }) => {
     return (
-      <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
+      <h5 className="text-lg font-semibold mt-6 mb-2" {...props}>
         {children}
       </h5>
     );
   },
   h6: ({ node, children, ...props }) => {
     return (
-      <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
+      <h6 className="text-base font-semibold mt-6 mb-2" {...props}>
         {children}
       </h6>
+    );
+  },
+  p: ({ node, children, ...props }) => {
+    return (
+      <p className="mb-4 last:mb-0" {...props}>
+        {children}
+      </p>
+    );
+  },
+  pre: ({ node, children, ...props }) => {
+    return (
+      <pre
+        className="bg-muted px-4 py-3 rounded-md my-2 overflow-x-auto text-sm font-mono"
+        {...props}
+      >
+        {children}
+      </pre>
+    );
+  },
+  code: ({ node, inline, className, children, ...props }: any) => {
+    return inline ? (
+      <code
+        className="bg-muted px-1 py-0.5 rounded text-sm font-mono"
+        {...props}
+      >
+        {children}
+      </code>
+    ) : (
+      <code className={`${className || ''} text-sm font-mono`} {...props}>
+        {children}
+      </code>
+    );
+  },
+  blockquote: ({ node, children, ...props }) => {
+    return (
+      <blockquote
+        className="pl-4 border-l-2 border-muted-foreground italic text-muted-foreground my-4"
+        {...props}
+      >
+        {children}
+      </blockquote>
+    );
+  },
+  hr: ({ node, ...props }) => {
+    return <hr className="my-4 border-muted" {...props} />;
+  },
+  table: ({ node, children, ...props }) => {
+    return (
+      <div className="my-4 overflow-x-auto">
+        <table
+          className="w-full border-collapse border border-border"
+          {...props}
+        >
+          {children}
+        </table>
+      </div>
+    );
+  },
+  th: ({ node, children, ...props }) => {
+    return (
+      <th
+        className="border border-border bg-background px-4 py-2 text-left font-medium"
+        {...props}
+      >
+        {children}
+      </th>
+    );
+  },
+  td: ({ node, children, ...props }) => {
+    return (
+      <td className="border border-border px-4 py-2" {...props}>
+        {children}
+      </td>
     );
   },
 };
@@ -116,18 +189,16 @@ const components: Partial<Components> = {
 const remarkPlugins = [remarkGfm];
 
 /**
- * Non-memoized version of the markdown component
- *
- * @param children - Markdown content to render as string
- * @returns Rendered markdown as React elements
+ * Non-memoized markdown component
+ * Renders markdown content using react-markdown with custom styling
  */
-const NonMemoizedMarkdown = ({ children }: { children: string }) => {
+function NonMemoizedMarkdown({ children }: { children: string }) {
   return (
-    <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
       {children}
     </ReactMarkdown>
   );
-};
+}
 
 /**
  * Memoized markdown component for performance optimization

@@ -6,7 +6,7 @@
  *
  * Features:
  * - Message state management and rendering
- * - Integration with mock API service
+ * - Integration with real API service
  * - File attachment handling
  * - Streaming response processing
  * - Artifact integration
@@ -30,7 +30,7 @@ import { useArtifactSelector } from '@/hooks/use-artifact';
 import { toast } from 'sonner';
 import { unstable_serialize } from 'swr/infinite';
 import { getChatHistoryPaginationKey } from './sidebar-history';
-import { mockApiService } from '@/lib/services/mock-api-service';
+import { apiService } from '@/lib/services/api-service';
 
 export function Chat({
   id,
@@ -76,7 +76,7 @@ export function Chat({
   );
 
   /**
-   * Custom submit handler that uses the mock API service
+   * Custom submit handler that uses the API service
    * Manages user message submission and AI response streaming
    */
   const customHandleSubmit = async (
@@ -89,7 +89,7 @@ export function Chat({
 
     try {
       // Send the user message to the API and get user message object
-      const userMessage = await mockApiService.sendMessage(input, attachments);
+      const userMessage = await apiService.sendMessage(input, attachments);
 
       // Add the user message to the UI
       append({
@@ -108,7 +108,7 @@ export function Chat({
       const messageIds = new Map();
 
       // Stream the AI response
-      await mockApiService.streamResponse(
+      await apiService.streamResponse(
         userMessage.content,
         {
           onChunk: (chunk) => {

@@ -1,14 +1,28 @@
 /**
- * API Service (Local Storage Version)
+ * API Service
  *
- * This file provides a service layer using browser localStorage
- * for data persistence without any external API calls.
+ * This file provides a service layer for API interactions.
+ * It integrates with the backend API for chat functionality.
  *
- * NOTE: Dates are stored as ISO strings in localStorage. When retrieving,
- * they are plain strings. If you need Date methods, convert them using new Date().
+ * Features:
+ * - User message handling
+ * - Streaming response processing
+ * - Chat history management
+ * - Error handling and recovery
  */
 
 import type { Attachment } from '@/lib/api/types';
+
+// Backend API configuration
+const API_CONFIG = {
+  // For direct backend access (server-side only)
+  BACKEND_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
+  // For client-side access (uses Next.js API route proxy)
+  BASE_URL: '/api',
+  ENDPOINTS: {
+    CHAT_STREAM: '/chat/stream',
+  }
+};
 
 // Type definitions for User, Chat, Message, and API responses
 export interface User {
@@ -384,17 +398,22 @@ export const apiService = {
     attachments: Attachment[] = [],
     chatId?: string,
   ): Promise<ChatMessage> => {
-    const response = await fetch('/api/chat/message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, attachments, chatId }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error sending message: ${response.statusText}`);
+    try {
+      // Since our backend API doesn't require a separate call to send user messages,
+      // we just need to create a local representation of the message to display in UI
+      const userMessage = {
+        id: generateId(),
+        content: message,
+        role: 'user' as const,
+        createdAt: new Date(),
+        attachments: attachments.length > 0 ? attachments : undefined,
+      };
+      
+      return userMessage;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw new Error(`Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    return await response.json();
   },
 
   // Stream an AI response based on a user message
@@ -407,58 +426,164 @@ export const apiService = {
     const { onChunk, onFinish, onError } = options;
 
     try {
-      const response = await fetch('/api/chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, chatId, attachments }),
+      // Encode the message for the query parameter
+      const encodedMessage = encodeURIComponent(message);
+      
+      // Connect to the backend API endpoint for streaming
+      const eventSource = new EventSource(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}`, {
+        withCredentials: false // Add this to handle CORS
       });
-
-      if (!response.ok) {
-        throw new Error(`Error streaming response: ${response.statusText}`);
-      }
-
-      if (!response.body) {
-        throw new Error('Response body is null');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
-        }
-
-        const chunk = decoder.decode(value);
-        const events = chunk.split('\n').filter(Boolean);
-
-        for (const event of events) {
-          try {
-            const parsed = JSON.parse(event);
-
-            switch (parsed.type) {
-              case 'reasoning':
-              case 'assistant':
-              case 'attachment':
-              case 'artifact':
-                onChunk(parsed.message);
-                break;
-              case 'finish':
-                assistantMessage = parsed.message;
-                break;
-            }
-          } catch (e) {
-            console.error('Error parsing stream chunk:', e);
+      
+      let assistantMessage: ChatMessage | null = null;
+      let messageCount = 0;
+      
+      // Handle the different event types from the API
+      eventSource.addEventListener('delta', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          messageCount++;
+          console.log('Event data:', data);
+          
+          // Generate a unique ID for this message
+          const messageId = `msg-${messageCount}-${Date.now()}`;
+          
+          switch (data.type) {
+            case 'system_prompt':
+              // Display system prompt message
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `system_prompt: ${data.content}`,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'user_message':
+              // Display user message echo
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `user_message: ${data.content}`,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'thinking':
+              // Display thinking message
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `thinking: ${data.content}`,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'selected_tool':
+              // Display selected tools
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `selected_tool:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'tool_called':
+              // Display tool called
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `tool_called:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'tool_result':
+              // Display tool results
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `tool_result:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
+                createdAt: new Date(),
+              });
+              break;
+              
+            case 'llm_streaming_response':
+              // Handle streaming response from LLM
+              if (!assistantMessage) {
+                // Create a new message for the first chunk
+                assistantMessage = {
+                  id: `response-${Date.now()}`,
+                  role: 'assistant' as const,
+                  content: data.content || '',
+                  createdAt: new Date(),
+                };
+                onChunk(assistantMessage);
+              } else {
+                // Update existing message with new content
+                assistantMessage.content += data.content || '';
+                onChunk({
+                  ...assistantMessage,
+                  content: assistantMessage.content,
+                });
+              }
+              break;
+              
+            default:
+              // Handle any other event types we don't explicitly recognize
+              onChunk({
+                id: messageId,
+                role: 'assistant' as const,
+                content: `${data.type}:\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``,
+                createdAt: new Date(),
+              });
           }
+        } catch (e) {
+          console.error('Error parsing stream chunk:', e, event.data);
         }
-      }
-
-      if (assistantMessage) {
-        onFinish(assistantMessage);
-      }
+      });
+      
+      // Handle completion of the stream
+      eventSource.addEventListener('end', (event) => {
+        eventSource.close();
+        
+        if (assistantMessage) {
+          onFinish(assistantMessage);
+        } else {
+          // If no assistant message was created, create a default one
+          const defaultMessage = {
+            id: generateId(),
+            role: 'assistant' as const,
+            content: 'I processed your request but no response was generated.',
+            createdAt: new Date(),
+          };
+          onFinish(defaultMessage);
+        }
+      });
+      
+      // Handle errors
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        
+        // Create a helpful error message for the user
+        const errorMessage = 
+          "Connection to the AI service failed. This could be due to network issues or the server may be temporarily unavailable.";
+        
+        // Display in the UI as an error message
+        if (!assistantMessage) {
+          assistantMessage = {
+            id: generateId(),
+            role: 'assistant' as const,
+            content: `⚠️ ${errorMessage}`,
+            createdAt: new Date(),
+          };
+          onChunk(assistantMessage);
+          onFinish(assistantMessage);
+        }
+        
+        onError(new Error(errorMessage));
+      };
     } catch (error) {
       console.error('Error in API stream:', error);
       onError(
