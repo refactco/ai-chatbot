@@ -139,25 +139,36 @@ export function Chat({
                   return updatedMessages;
                 }
               } else {
-                // Handle ChunkMessage objects
-                // Check if we've seen this message ID before
-                if (!messageIds.has(chunk.id)) {
-                  // New message, add it to the map and to the messages
-                  messageIds.set(chunk.id, messages.length);
-                  return [
-                    ...messages,
-                    { ...chunk, createdAt: chunk.createdAt || new Date() },
-                  ];
-                } else {
-                  // Update existing message
-                  const messageIndex = messageIds.get(chunk.id);
-                  const updatedMessages = [...messages];
-                  updatedMessages[messageIndex] = {
-                    ...updatedMessages[messageIndex],
-                    content: chunk.content,
-                  };
-                  return updatedMessages;
+                // ===== Improved Message Handling =====
+                // For streaming responses (ongoing AI response), update existing message
+                if (chunk.id && chunk.id.includes('response-')) {
+                  console.log('Processing streaming response chunk with ID:', chunk.id);
+                  
+                  // Look for existing message or add new one
+                  const existingIndex = messages.findIndex(msg => 
+                    msg.id === chunk.id || 
+                    (msg.id && msg.id.includes('response-'))
+                  );
+                  
+                  if (existingIndex !== -1) {
+                    // Update existing response
+                    console.log('Updating existing response at index:', existingIndex);
+                    const updatedMessages = [...messages];
+                    updatedMessages[existingIndex] = {
+                      ...updatedMessages[existingIndex],
+                      content: chunk.content,
+                    };
+                    return updatedMessages;
+                  } else {
+                    // Add new response message
+                    console.log('Adding new streaming response');
+                    return [...messages, { ...chunk, createdAt: chunk.createdAt || new Date() }];
+                  }
                 }
+                
+                // For event messages, always add as new message
+                // This ensures tool events are always displayed
+                return [...messages, { ...chunk, createdAt: chunk.createdAt || new Date() }];
               }
             });
           },

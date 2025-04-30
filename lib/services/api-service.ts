@@ -70,6 +70,7 @@ export interface ChatMessage {
   createdAt: Date;
   attachments?: Attachment[];
   reasoning?: string;
+  type?: string;
 }
 
 export interface ChatSummary {
@@ -429,141 +430,94 @@ export const apiService = {
       // Encode the message for the query parameter
       const encodedMessage = encodeURIComponent(message);
       
+      console.log('Starting chat stream request:', encodedMessage.substring(0, 30) + '...');
+      
       // Connect to the backend API endpoint for streaming
       const eventSource = new EventSource(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}`, {
         withCredentials: false // Add this to handle CORS
       });
       
-      let assistantMessage: ChatMessage | null = null;
-      let messageCount = 0;
+      // Track seen event types for debugging
+      const seenEventTypes = new Set<string>();
       
-      // Process raw event data
-      const handleEvent = (event: MessageEvent) => {
+      // Generate a unique session ID for this conversation
+      const sessionId = `session-${Date.now()}`;
+      
+      // Create a stable ID for the final streaming response
+      const finalResponseId = `response-${sessionId}`;
+      
+      // Store all streaming chunks
+      let responseContent = '';
+      
+      // Process events from the stream
+      eventSource.addEventListener('delta', (event) => {
         try {
-          const data = JSON.parse(event.data);
-          messageCount++;
-          console.log('Event data:', data);
+          // Parse the event data
+          const parsedData = JSON.parse(event.data);
+          const eventType = parsedData.type;
           
-          // Generate a unique ID for this message
-          const messageId = `msg-${data.type}-${messageCount}-${Date.now()}`;
+          // Track event types seen
+          seenEventTypes.add(eventType);
           
-          switch (data.type) {
-            case 'system_prompt':
-              // Display system prompt message
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `system_prompt: ${data.content}`,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'user_message':
-              // Display user message echo
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `user_message: ${data.content}`,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'thinking':
-              // Display thinking message
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `thinking: ${data.content}`,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'selected_tool':
-              // Display selected tools
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `selected_tool:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'tool_called':
-              // Display tool called
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `tool_called:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'tool_result':
-              // Display tool results
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `tool_result:\n\`\`\`json\n${JSON.stringify(data.data, null, 2)}\n\`\`\``,
-                createdAt: new Date(),
-              });
-              break;
-              
-            case 'llm_streaming_response':
-              // Handle streaming response from LLM
-              if (!assistantMessage) {
-                // Create a new message for the first chunk
-                assistantMessage = {
-                  id: `response-${Date.now()}`,
-                  role: 'assistant' as const,
-                  content: data.content || '',
-                  createdAt: new Date(),
-                };
-                onChunk(assistantMessage);
-              } else {
-                // Update existing message with new content
-                assistantMessage.content += data.content || '';
-                onChunk({
-                  ...assistantMessage,
-                  content: assistantMessage.content,
-                });
-              }
-              break;
-              
-            default:
-              // Handle any other event types we don't explicitly recognize
-              onChunk({
-                id: messageId,
-                role: 'assistant' as const,
-                content: `${data.type}:\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``,
-                createdAt: new Date(),
-              });
+          // Skip user message events (redundant with UI)
+          if (eventType === 'user_message') {
+            return;
           }
-        } catch (e) {
-          console.error('Error parsing stream chunk:', e, event.data);
-        }
-      };
-      
-      // Handle the different event types from the API
-      eventSource.addEventListener('delta', handleEvent);
-      
-      // Also listen to the generic message event as a fallback
-      eventSource.onmessage = handleEvent;
-      
-      // Handle completion of the stream
-      eventSource.addEventListener('end', (event) => {
-        eventSource.close();
-        
-        if (assistantMessage) {
-          onFinish(assistantMessage);
-        } else {
-          // If no assistant message was created, create a default one
-          const defaultMessage = {
-            id: generateId(),
+          
+          // Handle streaming response chunks
+          if (eventType === 'llm_streaming_response') {
+            // Accumulate content
+            responseContent += parsedData.content || '';
+            
+            // Create or update the streaming message
+            const streamingMessage = {
+              id: finalResponseId,
+              role: 'assistant' as const,
+              content: responseContent,
+              createdAt: new Date(),
+            };
+            
+            // Send to UI
+            onChunk(streamingMessage);
+            return;
+          }
+          
+          // Create a message for all other event types
+          const eventMessage = {
+            id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
             role: 'assistant' as const,
-            content: 'I processed your request but no response was generated.',
+            content: formatEventContent(parsedData),
             createdAt: new Date(),
           };
-          onFinish(defaultMessage);
+          
+          onChunk(eventMessage);
+        } catch (error) {
+          console.error('Error processing event:', error);
+        }
+      });
+      
+      // Handle stream completion
+      eventSource.addEventListener('end', () => {
+        console.log('Stream completed. Event types seen:', [...seenEventTypes]);
+        eventSource.close();
+        
+        // Ensure we have a complete final response
+        if (responseContent) {
+          const finalMessage = {
+            id: finalResponseId,
+            role: 'assistant' as const,
+            content: responseContent,
+            createdAt: new Date(),
+          };
+          onFinish(finalMessage);
+        } else {
+          // Fallback if no streaming response was received
+          onFinish({
+            id: generateId(),
+            role: 'assistant' as const,
+            content: 'Processing complete.',
+            createdAt: new Date(),
+          });
         }
       });
       
@@ -571,32 +525,12 @@ export const apiService = {
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
         eventSource.close();
-        
-        // Create a helpful error message for the user
-        const errorMessage = 
-          "Connection to the AI service failed. This could be due to network issues or the server may be temporarily unavailable.";
-        
-        // Display in the UI as an error message
-        if (!assistantMessage) {
-          assistantMessage = {
-            id: generateId(),
-            role: 'assistant' as const,
-            content: `⚠️ ${errorMessage}`,
-            createdAt: new Date(),
-          };
-          onChunk(assistantMessage);
-          onFinish(assistantMessage);
-        }
-        
-        onError(new Error(errorMessage));
+        onError(new Error('Connection to the AI service failed.'));
       };
+      
     } catch (error) {
-      console.error('Error in API stream:', error);
-      onError(
-        error instanceof Error
-          ? error
-          : new Error('Unknown error in stream response'),
-      );
+      console.error('Error in stream setup:', error);
+      onError(error instanceof Error ? error : new Error('Unknown error'));
     }
   },
 
@@ -642,3 +576,53 @@ export const apiService = {
     return await response.json();
   },
 };
+
+// Helper function to format events for display
+function formatEventContent(event: any): string {
+  const { type, content, data } = event;
+  
+  // Handle text content events
+  if (content && typeof content === 'string') {
+    return content;
+  }
+  
+  // Format data objects for different event types
+  if (data) {
+    switch (type) {
+      case 'selected_tool':
+        return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
+        
+      case 'tool_called':
+        return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
+        
+      case 'tool_result':
+        return data.success
+          ? `✅ Tool result:\n${formatJsonData(data.result)}`
+          : `❌ Error: ${data.result || 'Unknown error'}`;
+          
+      default:
+        return `${type}:\n${formatJsonData(data)}`;
+    }
+  }
+  
+  // Fallback for any other format
+  return `${type}: ${JSON.stringify(event, null, 2)}`;
+}
+
+// Helper to format JSON data with truncation
+function formatJsonData(data: any): string {
+  if (!data) return '';
+  
+  try {
+    const jsonStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    const lines = jsonStr.split('\n');
+    
+    if (lines.length > 8) {
+      return `\`\`\`json\n${lines.slice(0, 8).join('\n')}\n... (${lines.length - 8} more lines)\n\`\`\``;
+    }
+    
+    return `\`\`\`json\n${jsonStr}\n\`\`\``;
+  } catch (e) {
+    return String(data);
+  }
+}

@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
   ENDPOINTS: {
-    CHAT_STREAM: '/api/chat/stream',
+    CHAT_STREAM: '/chat/stream',
   }
 };
 
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Message parameter is required' }, { status: 400 });
     }
     
-    // Build the URL for the backend API
-    const backendUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodeURIComponent(message)}`;
+    // Build the URL for the backend API - ensure we're using the correct path
+    const backendUrl = `${API_CONFIG.BASE_URL}/api${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodeURIComponent(message)}`;
     
     console.log('Proxying request to:', backendUrl);
     
@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
             
             // Log the data being forwarded (for debugging)
             const textChunk = new TextDecoder().decode(value);
-            console.log('Forwarding chunk:', textChunk);
+            console.log('Raw chunk received:', textChunk);
             
-            // Forward the chunk to the client
+            // Forward the chunk to the client without parsing
             controller.enqueue(value);
           }
         } catch (error) {
