@@ -9,6 +9,7 @@
  * - Streaming response processing
  * - Chat history management
  * - Error handling and recovery
+ * - Support for both mock and real API implementations
  */
 
 import type { Attachment } from '@/lib/api/types';
@@ -16,14 +17,27 @@ import type { Attachment } from '@/lib/api/types';
 // Backend API configuration
 const API_CONFIG = {
   // For direct backend access (server-side only)
-  BACKEND_URL:
-    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
+  BACKEND_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333',
   // For client-side access (uses Next.js API route proxy)
   BASE_URL: '/api',
   ENDPOINTS: {
     CHAT_STREAM: '/chat/stream',
   },
 };
+
+// Configuration flag to switch between mock and real API
+const USE_REAL_API = process.env.NEXT_PUBLIC_USE_REAL_API === 'true';
+
+// User token for authentication with real API
+const API_TOKEN =
+  process.env.NEXT_PUBLIC_API_TOKEN ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMGZhMDk1LWQyNjctNGFlYy05NjMxLTJiMzRhODVjNzM2MyIsImVtYWlsIjoiZGV2QHJlZmFjdC5jbyIsImV4cCI6NDg5OTU5OTk4MywiaWF0IjoxNzQ1OTk5OTgzfQ.0pDb3MuRpaO-9N8C92ugzDmsq5pnMxL78c1Wz77hpJ4';
+
+console.log({
+  USE_REAL_API,
+  API_TOKEN,
+  API_CONFIG,
+});
 
 // Type definitions for User, Chat, Message, and API responses
 export interface User {
@@ -429,22 +443,28 @@ export const apiService = {
   ): Promise<void> => {
     const { onChunk, onFinish, onError } = options;
 
+    if (!USE_REAL_API) {
+      // Use the mock implementation when real API is disabled
+      await mockStreamResponse(message, options, chatId, attachments);
+      return;
+    }
+
     try {
       // Encode the message for the query parameter
       const encodedMessage = encodeURIComponent(message);
 
       console.log(
-        'Starting chat stream request:',
+        'Starting chat stream request to real API:',
         encodedMessage.substring(0, 30) + '...',
       );
 
-      // Connect to the backend API endpoint for streaming
-      const eventSource = new EventSource(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}`,
-        {
-          withCredentials: false, // Add this to handle CORS
-        },
-      );
+      // Build the API URL with message and token
+      const apiUrl = `${API_CONFIG.BACKEND_URL}${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}&token=${API_TOKEN}`;
+
+      // Connect to the real backend API endpoint for streaming
+      const eventSource = new EventSource(apiUrl, {
+        withCredentials: false, // Add this to handle CORS
+      });
 
       // Track seen event types for debugging
       const seenEventTypes = new Set<string>();
@@ -459,194 +479,190 @@ export const apiService = {
       let responseContent = '';
 
       // Process events from the stream
-      eventSource.addEventListener('delta', (event) => {
+      eventSource.onmessage = (event) => {
         try {
           // Parse the event data
           const parsedData = JSON.parse(event.data);
-          const eventType = parsedData.role;
+          console.log('Received streaming data:', parsedData);
 
-          // Track event types seen
-          seenEventTypes.add(eventType);
+          // Extract content from the response
+          const content = parsedData.content || '';
 
-          if (eventType === 'user' && !parsedData.content) {
-            return;
-          }
+          // Accumulate content
+          responseContent += content;
 
-          // Skip user message events (redundant with UI)
-          if (eventType === 'user') {
-            const eventMessage = {
-              id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
-              role: 'user' as const,
-              content: formatEventContent(parsedData),
-              createdAt: new Date(),
-            };
-
-            onChunk(eventMessage);
-            return;
-          }
-
-          // Handle streaming response chunks
-          if (eventType === 'llm_streaming_response') {
-            // Accumulate content
-            responseContent += parsedData.content || '';
-
-            // Create or update the streaming message
-            const streamingMessage = {
-              id: finalResponseId,
-              role: 'assistant' as const,
-              content: responseContent,
-              createdAt: new Date(),
-            };
-
-            // Send to UI
-            onChunk(streamingMessage);
-            return;
-          }
-
-          // Create a message for all other event types
-          const eventMessage = {
-            id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
+          // Create or update the streaming message
+          const streamingMessage = {
+            id: finalResponseId,
             role: 'assistant' as const,
-            content: formatEventContent(parsedData),
-            tool_calls: parsedData.tool_calls,
+            content: responseContent,
             createdAt: new Date(),
           };
 
-          onChunk(eventMessage);
+          // Send to UI
+          onChunk(streamingMessage);
         } catch (error) {
-          console.error('Error processing event:', error);
+          console.error('Error parsing stream data:', error);
         }
-      });
+      };
 
-      // Handle stream completion
-      eventSource.addEventListener('end', () => {
-        console.log('Stream completed. Event types seen:', [...seenEventTypes]);
+      // Handle errors
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
         eventSource.close();
 
-        // Ensure we have a complete final response
-        if (responseContent) {
+        // If we've collected some response, still consider it complete
+        if (responseContent.length > 0) {
           const finalMessage = {
             id: finalResponseId,
             role: 'assistant' as const,
             content: responseContent,
             createdAt: new Date(),
           };
+
           onFinish(finalMessage);
         } else {
-          // Fallback if no streaming response was received
-          onFinish({
-            id: generateId(),
-            role: 'assistant' as const,
-            content: 'Processing complete.',
-            createdAt: new Date(),
-          });
+          onError(new Error('Stream connection error'));
         }
-      });
-
-      // Handle errors
-      eventSource.onerror = (error) => {
-        console.error('EventSource error:', error);
-        eventSource.close();
-        onError(new Error('Connection to the AI service failed.'));
       };
+
+      // Handle stream completion
+      eventSource.addEventListener('done', (event) => {
+        eventSource.close();
+
+        const finalMessage = {
+          id: finalResponseId,
+          role: 'assistant' as const,
+          content: responseContent,
+          createdAt: new Date(),
+        };
+
+        onFinish(finalMessage);
+      });
     } catch (error) {
-      console.error('Error in stream setup:', error);
-      onError(error instanceof Error ? error : new Error('Unknown error'));
+      console.error('Stream error:', error);
+      onError(
+        error instanceof Error ? error : new Error('Unknown stream error'),
+      );
+    }
+  },
+
+  // Get chat by ID
+  getChatById: async (chatId: string): Promise<ChatDetailResponse | null> => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}`);
+      if (!response.ok) {
+        throw new Error(`Error fetching chat: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching chat:', error);
+      // Fall back to local storage
+      return await chatService.getChatById(chatId);
     }
   },
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`/api/chats?limit=${limit}&offset=${offset}`);
+    try {
+      const response = await fetch(
+        `/api/chats?limit=${limit}&offset=${offset}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Error fetching chat: ${response.statusText}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Error fetching chat history: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      // Return empty array on error
+      return [];
     }
-
-    return await response.json();
-  },
-
-  // Get chat by ID with its messages
-  getChatById: async (
-    chatId: string,
-  ): Promise<{ chat: ChatSummary; messages: ChatMessage[] } | null> => {
-    const response = await fetch(`/api/chat/${chatId}`);
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Error fetching chat: ${response.statusText}`);
-    }
-
-    return await response.json();
   },
 
   // Create a new empty chat
   createNewChat: async (): Promise<ChatSummary> => {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    if (!response.ok) {
-      throw new Error(`Error creating chat: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Error creating chat: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+      // Fall back to creating a local chat
+      const userId = 'local-user';
+      const newChat = await chatService.createChat(userId, 'New Conversation');
+      return {
+        ...newChat,
+        lastMessagePreview: '',
+      };
     }
-
-    return await response.json();
   },
 };
+
+// Mock implementation of stream response
+// This is used when the real API is disabled
+async function mockStreamResponse(
+  message: string,
+  options: StreamResponseOptions,
+  chatId?: string,
+  attachments: Attachment[] = [],
+): Promise<void> {
+  const { onChunk, onFinish, onError } = options;
+  const currentChatId = chatId || 'dev-static-chat-id';
+
+  try {
+    // Simulate API request delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Generate a simple response
+    const mockResponse = `This is a mock response to: "${message}"`;
+
+    // Split the message into words to simulate streaming
+    const words = mockResponse.split(' ');
+    const responseId = `mock-response-${Date.now()}`;
+    let accumulatedResponse = '';
+
+    // Stream each word with a small delay
+    for (const word of words) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      accumulatedResponse += (accumulatedResponse ? ' ' : '') + word;
+
+      onChunk({
+        id: responseId,
+        role: 'assistant',
+        content: accumulatedResponse,
+        createdAt: new Date(),
+      });
+    }
+
+    // Send the final message
+    const assistantMessage = {
+      id: responseId,
+      content: accumulatedResponse,
+      role: 'assistant' as const,
+      createdAt: new Date(),
+    };
+
+    onFinish(assistantMessage);
+  } catch (error) {
+    onError(
+      error instanceof Error
+        ? error
+        : new Error('Unknown error in mock stream response'),
+    );
+  }
+}
 
 // Helper function to format events for display
 function formatEventContent(event: any): string {
   const { type, content, data } = event;
-
   return content;
-
-  // Handle text content events
-  // if (content && typeof content === 'string') {
-  //   return content;
-  // }
-
-  // // Format data objects for different event types
-  // if (data) {
-  //   switch (type) {
-  //     case 'selected_tool':
-  //       return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
-
-  //     case 'tool_called':
-  //       return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
-
-  //     case 'tool_result':
-  //       return data.success
-  //         ? `✅ Tool result:\n${formatJsonData(data.result)}`
-  //         : `❌ Error: ${data.result || 'Unknown error'}`;
-
-  //     default:
-  //       return `${type}:\n${formatJsonData(data)}`;
-  //   }
-  // }
-
-  // // Fallback for any other format
-  // return `${type}: ${JSON.stringify(event, null, 2)}`;
-}
-
-// Helper to format JSON data with truncation
-function formatJsonData(data: any): string {
-  if (!data) return '';
-
-  try {
-    const jsonStr =
-      typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-    const lines = jsonStr.split('\n');
-
-    if (lines.length > 8) {
-      return `\`\`\`json\n${lines.slice(0, 8).join('\n')}\n... (${lines.length - 8} more lines)\n\`\`\``;
-    }
-
-    return `\`\`\`json\n${jsonStr}\n\`\`\``;
-  } catch (e) {
-    return String(data);
-  }
 }

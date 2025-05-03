@@ -1,14 +1,23 @@
 /**
- * Chat Stream Mock API Route
+ * Chat Stream API Route
  *
- * This file implements a mock stream API that returns a fixed set of messages
- * for demonstration purposes. It simulates the same server-sent events format
- * that a real backend would provide.
+ * This file implements a stream API that can either return mock data or
+ * proxy requests to the real API based on environment configuration.
+ *
+ * Features:
+ * - Proxies to real API when NEXT_PUBLIC_USE_REAL_API is true
+ * - Falls back to mock data for development without a real backend
+ * - Maintains the same event structure for both implementations
  */
 
 import { NextRequest } from 'next/server';
 
-// Mock data from the sample stream
+// Check if we should use the real API (from environment variables)
+const USE_REAL_API = process.env.NEXT_PUBLIC_USE_REAL_API === 'true';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333';
+
+// Mock data from the sample stream (used when real API is disabled)
 const mockStreamData = [
   {
     event: 'delta',
@@ -56,222 +65,102 @@ const mockStreamData = [
           {
             name: 'Design UI of new feature',
           },
-          // {
-          //   name: 'Implement the front-end of the new feature',
-          // },
-          // {
-          //   name: 'Implement the back-end of the new feature',
-          // },
         ],
       },
       id: '4',
     },
   },
-  {
-    event: 'delta',
-    data: {
-      role: 'user',
-      tool_calls: {
-        type: 'confirm',
-        message_id: '4',
-        data: [
-          {
-            name: 'Design UI of new feature',
-            status: 'accepted',
-          },
-          // {
-          //   name: 'Implement the front-end of the new feature',
-          //   status: 'accepted',
-          // },
-          // {
-          //   name: 'Implement the back-end of the new feature',
-          //   status: 'accepted',
-          // },
-        ],
-      },
-      id: '5',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: 'Listing the available people from the team...',
-      tool_calls: {
-        type: 'result',
-        title: 'I found these people in the team',
-        items: [
-          { name: 'Hamidreza Amini' },
-          { name: 'Asghar Mirzaei' },
-          { name: 'Alireza Arjvand' },
-        ],
-      },
-      id: '6',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: 'Finding the best person ...',
-      id: '7',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content:
-        'Alright, I assigned the task to Asghar Mirzaei, I added next Monday as the deadline. Let me know if you need anything else, or change anything.',
-      // tool_calls: {
-      //   type: 'request',
-      //   title: "I'm updating the task list:",
-      //   items: [
-      //     {
-      //       gid: '1',
-      //       name: 'Design UI of new feature',
-      //       url: '',
-      //       attributes: [
-      //         {
-      //           label: 'description',
-      //           old: '',
-      //           new: 'Design the UI of the new feature on figma',
-      //         },
-      //         {
-      //           label: 'assignee',
-      //           old: '',
-      //           new: 'Asghar Mirzaei',
-      //         },
-      //         {
-      //           label: 'due_on',
-      //           old: '',
-      //           new: '2025-05-08',
-      //         },
-      //       ],
-      //     },
-      //   ],
-      // },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Description',
-            value: 'Design the UI of the new feature on figma',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Assignee',
-            value: 'Asghar Mirzaei',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Due Date',
-            value: '2025-05-09',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'end',
-    data: {},
-  },
 ];
 
-/**
- * Delay function to simulate network latency
- * @param ms - Milliseconds to delay
- */
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * GET handler for the chat stream API
- * Returns a simulated stream of server-sent events
- */
 export async function GET(request: NextRequest) {
-  try {
-    // Create a new ReadableStream to send the mock data
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const encoder = new TextEncoder();
+  // Get the message from the query parameters
+  const searchParams = request.nextUrl.searchParams;
+  const message = searchParams.get('message') || '';
+  const token = searchParams.get('token');
 
-          // Send each event with a small delay to simulate streaming
-          for (const item of mockStreamData) {
-            // Encode the event as a server-sent event
-            const eventString = `event: ${item.event}\ndata: ${JSON.stringify(item.data)}\n\n`;
-            controller.enqueue(encoder.encode(eventString));
+  if (USE_REAL_API) {
+    // Proxy to the real API
+    try {
+      console.log(
+        'Proxying to real API:',
+        `${API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${token}`,
+      );
 
-            // Add a delay between messages to simulate streaming
-            await delay(300);
-          }
-
-          // Close the stream when done
-          controller.close();
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
-        }
-      },
-    });
-
-    // Return the response with appropriate headers for server-sent events
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-      },
-    });
-  } catch (error) {
-    console.error('Stream API error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to stream chat response' }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
+      // Forward the request to the real API
+      const response = await fetch(
+        `${API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${token}`,
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
         },
-      },
-    );
+      );
+
+      // If the real API request fails, fall back to mock data
+      if (!response.ok) {
+        console.error(
+          'Error from real API:',
+          response.status,
+          response.statusText,
+        );
+        return createMockResponse();
+      }
+
+      // Stream the response directly from the real API
+      return new Response(response.body, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    } catch (error) {
+      console.error('Error proxying to real API:', error);
+      // Fall back to mock data on error
+      return createMockResponse();
+    }
+  } else {
+    // Use the mock implementation
+    return createMockResponse();
   }
+}
+
+// Helper function to create a mock streaming response
+function createMockResponse() {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        // Add a small delay to simulate network latency
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Stream the mock data events
+        for (const event of mockStreamData) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          controller.enqueue(
+            encoder.encode(
+              `event: ${event.event}\ndata: ${JSON.stringify(event.data)}\n\n`,
+            ),
+          );
+        }
+
+        // Send a done event
+        controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
 }
