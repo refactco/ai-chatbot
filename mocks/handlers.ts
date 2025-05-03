@@ -118,7 +118,9 @@ export const handlers = [
   /**
    * Handler for streaming AI responses
    * Simulates a streaming response with a simple message
+   * NOTE: Disabled to allow real API calls to go through
    */
+  /*
   http.post('/api/chat/stream', async ({ request }) => {
     console.log({ request });
     // Always return a single, generic assistant message
@@ -170,6 +172,7 @@ export const handlers = [
       },
     });
   }),
+  */
 
   /**
    * Handler for fetching chat history

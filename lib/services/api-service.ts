@@ -16,13 +16,15 @@ import type { Attachment } from '@/lib/api/types';
 // Backend API configuration
 const API_CONFIG = {
   // For direct backend access (server-side only)
-  BACKEND_URL:
-    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
-  // For client-side access (uses Next.js API route proxy)
-  BASE_URL: '/api',
+  BACKEND_URL: 'http://localhost:3333',
+  // For client-side access (uses real API endpoint)
+  BASE_URL: 'http://localhost:3333/api',
   ENDPOINTS: {
     CHAT_STREAM: '/chat/stream',
   },
+  // Real API token
+  AUTH_TOKEN:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMGZhMDk1LWQyNjctNGFlYy05NjMxLTJiMzRhODVjNzM2MyIsImVtYWlsIjoiZGV2QHJlZmFjdC5jbyIsImV4cCI6NDg5OTU5OTk4MywiaWF0IjoxNzQ1OTk5OTgzfQ.0pDb3MuRpaO-9N8C92ugzDmsq5pnMxL78c1Wz77hpJ4',
 };
 
 // Type definitions for User, Chat, Message, and API responses
@@ -438,9 +440,9 @@ export const apiService = {
         encodedMessage.substring(0, 30) + '...',
       );
 
-      // Connect to the backend API endpoint for streaming
+      // Connect to the backend API endpoint for streaming with token
       const eventSource = new EventSource(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}&token=${API_CONFIG.AUTH_TOKEN}`,
         {
           withCredentials: false, // Add this to handle CORS
         },
@@ -463,6 +465,16 @@ export const apiService = {
         try {
           // Parse the event data
           const parsedData = JSON.parse(event.data);
+
+          // Log for debugging real API responses
+          console.log('Real API event data:', {
+            event: event,
+            parsedData: parsedData,
+            role: parsedData.role,
+            content: parsedData.content,
+            toolCalls: parsedData.tool_calls,
+          });
+
           const eventType = parsedData.role;
 
           // Track event types seen
@@ -600,36 +612,44 @@ export const apiService = {
 
 // Helper function to format events for display
 function formatEventContent(event: any): string {
-  const { type, content, data } = event;
+  // If there's direct content, use it
+  if (event.content && typeof event.content === 'string') {
+    return event.content;
+  }
 
-  return content;
+  // For tool calls, format them appropriately
+  if (event.tool_calls) {
+    if (event.tool_calls.type === 'request' && event.tool_calls.title) {
+      return event.tool_calls.title;
+    } else if (
+      event.tool_calls.items &&
+      Array.isArray(event.tool_calls.items)
+    ) {
+      const itemsList = event.tool_calls.items
+        .map((item: any) => `- ${item.name || 'Unnamed item'}`)
+        .join('\n');
+      return `${event.tool_calls.title || 'Tool Request'}:\n${itemsList}`;
+    }
+  }
 
-  // Handle text content events
-  // if (content && typeof content === 'string') {
-  //   return content;
-  // }
-
-  // // Format data objects for different event types
-  // if (data) {
-  //   switch (type) {
-  //     case 'selected_tool':
-  //       return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
-
-  //     case 'tool_called':
-  //       return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
-
-  //     case 'tool_result':
-  //       return data.success
-  //         ? `✅ Tool result:\n${formatJsonData(data.result)}`
-  //         : `❌ Error: ${data.result || 'Unknown error'}`;
-
-  //     default:
-  //       return `${type}:\n${formatJsonData(data)}`;
-  //   }
-  // }
-
-  // // Fallback for any other format
-  // return `${type}: ${JSON.stringify(event, null, 2)}`;
+  // Format based on event type/role
+  switch (event.role) {
+    case 'system_prompt':
+      return `System: ${event.content || 'System message'}`;
+    case 'thinking':
+      return `Thinking: ${event.content || 'Processing...'}`;
+    case 'selected_tool':
+      return `Selected tool: ${event.content || 'Unknown tool'}`;
+    case 'tool_called':
+      return `Tool called: ${event.content || 'Unknown tool'}`;
+    case 'tool_result':
+      return `Tool result: ${event.content || 'No result'}`;
+    case 'llm_streaming_response':
+      return event.content || '';
+    default:
+      // For any other type, just return the content if available
+      return event.content || `Event: ${event.role || 'unknown'}`;
+  }
 }
 
 // Helper to format JSON data with truncation

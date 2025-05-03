@@ -1,261 +1,69 @@
 /**
- * Chat Stream Mock API Route
+ * Chat Stream API Route
  *
- * This file implements a mock stream API that returns a fixed set of messages
- * for demonstration purposes. It simulates the same server-sent events format
- * that a real backend would provide.
+ * This file now acts as a proxy for the real chat API stream endpoint.
+ * It forwards requests to the external API and streams the response back.
  */
 
 import { NextRequest } from 'next/server';
 
-// Mock data from the sample stream
-const mockStreamData = [
-  {
-    event: 'delta',
-    data: {
-      role: 'user',
-      content:
-        'I had a call with Sandbox client, they asked me to add a new feature for their magazine, create the tasks for it',
-      id: '0',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content:
-        "You're asking me to create tasks for a new feature for Sandbox's magazine, do they mentioned a specific deadline?",
-      id: '1',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'user',
-      content: 'They want it for next week',
-      id: '2',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: "OK, I'm looking for Sandbox project first...",
-      id: '3',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: "I'm creating these tasks in Sandbox project:",
-      tool_calls: {
-        type: 'request',
-        title: "I'm creating these tasks in Sandbox project:",
-        items: [
-          {
-            name: 'Design UI of new feature',
-          },
-          // {
-          //   name: 'Implement the front-end of the new feature',
-          // },
-          // {
-          //   name: 'Implement the back-end of the new feature',
-          // },
-        ],
-      },
-      id: '4',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'user',
-      tool_calls: {
-        type: 'confirm',
-        message_id: '4',
-        data: [
-          {
-            name: 'Design UI of new feature',
-            status: 'accepted',
-          },
-          // {
-          //   name: 'Implement the front-end of the new feature',
-          //   status: 'accepted',
-          // },
-          // {
-          //   name: 'Implement the back-end of the new feature',
-          //   status: 'accepted',
-          // },
-        ],
-      },
-      id: '5',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: 'Listing the available people from the team...',
-      tool_calls: {
-        type: 'result',
-        title: 'I found these people in the team',
-        items: [
-          { name: 'Hamidreza Amini' },
-          { name: 'Asghar Mirzaei' },
-          { name: 'Alireza Arjvand' },
-        ],
-      },
-      id: '6',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content: 'Finding the best person ...',
-      id: '7',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      content:
-        'Alright, I assigned the task to Asghar Mirzaei, I added next Monday as the deadline. Let me know if you need anything else, or change anything.',
-      // tool_calls: {
-      //   type: 'request',
-      //   title: "I'm updating the task list:",
-      //   items: [
-      //     {
-      //       gid: '1',
-      //       name: 'Design UI of new feature',
-      //       url: '',
-      //       attributes: [
-      //         {
-      //           label: 'description',
-      //           old: '',
-      //           new: 'Design the UI of the new feature on figma',
-      //         },
-      //         {
-      //           label: 'assignee',
-      //           old: '',
-      //           new: 'Asghar Mirzaei',
-      //         },
-      //         {
-      //           label: 'due_on',
-      //           old: '',
-      //           new: '2025-05-08',
-      //         },
-      //       ],
-      //     },
-      //   ],
-      // },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Description',
-            value: 'Design the UI of the new feature on figma',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Assignee',
-            value: 'Asghar Mirzaei',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'delta',
-    data: {
-      role: 'assistant',
-      // content: '',
-      tool_calls: {
-        type: 'request',
-        title: 'Updating the task attribute:',
-        items: [
-          {
-            gid: '1',
-            name: 'Due Date',
-            value: '2025-05-09',
-          },
-        ],
-      },
-      id: '8',
-    },
-  },
-  {
-    event: 'end',
-    data: {},
-  },
-];
-
-/**
- * Delay function to simulate network latency
- * @param ms - Milliseconds to delay
- */
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Real API configuration
+const REAL_API_BASE_URL = 'http://localhost:3333';
+const REAL_API_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMGZhMDk1LWQyNjctNGFlYy05NjMxLTJiMzRhODVjNzM2MyIsImVtYWlsIjoiZGV2QHJlZmFjdC5jbyIsImV4cCI6NDg5OTU5OTk4MywiaWF0IjoxNzQ1OTk5OTgzfQ.0pDb3MuRpaO-9N8C92ugzDmsq5pnMxL78c1Wz77hpJ4';
 
 /**
  * GET handler for the chat stream API
- * Returns a simulated stream of server-sent events
+ * Proxies requests to the real API and forwards the response
  */
 export async function GET(request: NextRequest) {
   try {
-    // Create a new ReadableStream to send the mock data
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const encoder = new TextEncoder();
+    // Extract the message from the query parameters
+    const { searchParams } = new URL(request.url);
+    const message = searchParams.get('message');
 
-          // Send each event with a small delay to simulate streaming
-          for (const item of mockStreamData) {
-            // Encode the event as a server-sent event
-            const eventString = `event: ${item.event}\ndata: ${JSON.stringify(item.data)}\n\n`;
-            controller.enqueue(encoder.encode(eventString));
+    if (!message) {
+      return new Response(JSON.stringify({ error: 'Message is required' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
-            // Add a delay between messages to simulate streaming
-            await delay(300);
-          }
+    // Construct the real API URL
+    const apiUrl = `${REAL_API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${REAL_API_TOKEN}`;
 
-          // Close the stream when done
-          controller.close();
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
-        }
+    console.log('Proxying request to real API:', apiUrl);
+
+    // Forward the request to the real API
+    const apiResponse = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        Accept: 'text/event-stream',
       },
     });
 
-    // Return the response with appropriate headers for server-sent events
-    return new Response(stream, {
+    // Check if the response is successful
+    if (!apiResponse.ok) {
+      console.error('API error:', apiResponse.status, apiResponse.statusText);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to get response from API',
+          status: apiResponse.status,
+          statusText: apiResponse.statusText,
+        }),
+        {
+          status: apiResponse.status,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    }
+
+    // Return the streaming response with appropriate headers
+    return new Response(apiResponse.body, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
