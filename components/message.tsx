@@ -10,6 +10,7 @@
  * - Message editing functionality
  * - Animation for message transitions
  * - Support for AI reasoning display
+ * - Support for user_message and assistant_message event types
  *
  * This component is optimized with memoization to prevent unnecessary re-renders
  * and supports both plain text and markdown content.
@@ -17,21 +18,19 @@
 
 'use client';
 
-import type { UIMessage } from '@/lib/api/types';
+import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
+import { cn } from '@/lib/utils';
+import equal from 'fast-deep-equal';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
-import { PencilEditIcon, SparklesIcon, UserIcon, BrainIcon } from './icons';
-import { Markdown } from './markdown';
-import { MessageActions } from './message-actions';
-import { PreviewAttachment } from './preview-attachment';
 import { DocumentPreview } from './document-preview';
-import equal from 'fast-deep-equal';
-import { cn } from '@/lib/utils';
+import { PencilEditIcon, SparklesIcon, UserIcon } from './icons';
+import { Markdown } from './markdown';
+import { MessageEditor } from './message-editor';
+import { PreviewAttachment } from './preview-attachment';
+import ToolResult from './tool-result/tool-result';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { MessageEditor } from './message-editor';
-import type { UseChatHelpers } from '@/lib/api/types';
-import { MessageReasoning } from './message-reasoning';
 
 /**
  * The core message component that renders a single chat message
@@ -51,6 +50,7 @@ const PurePreviewMessage = ({
   setMessages,
   reload,
   isReadonly,
+  showAssistantIcon = false,
 }: {
   chatId: string;
   message: UIMessage;
@@ -58,17 +58,33 @@ const PurePreviewMessage = ({
   setMessages: UseChatHelpers['setMessages'];
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
+  showAssistantIcon: boolean;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
+
+  // Determine if the message is a user_message or assistant_message event
+  const isUserMessageEvent = message.role === 'user';
+  const isAssistantMessageEvent = message.role === 'assistant';
+  const isToolMessageEvent = message.role === 'tool';
+  // Set role based on message type if it exists
+  const messageRole =
+    message.role ||
+    (isUserMessageEvent
+      ? 'user'
+      : isAssistantMessageEvent
+        ? 'assistant'
+        : message.role);
+
+  console.log({ previewMessage: message });
 
   return (
     <AnimatePresence>
       <motion.div
-        data-testid={`message-${message.role}`}
+        data-testid={`message-${messageRole}`}
         className="w-full mx-auto max-w-3xl px-4 group/message"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        data-role={message.role}
+        data-role={messageRole}
       >
         <div
           className={cn(
@@ -80,25 +96,33 @@ const PurePreviewMessage = ({
           )}
         >
           {/* System message avatar */}
-          {message.role === 'system' && (
+          {/* {messageRole === 'tool' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
                 <BrainIcon size={14} />
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Assistant message avatar */}
-          {message.role === 'assistant' && (
-            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+          {isAssistantMessageEvent || isToolMessageEvent ? (
+            <div
+              className={cn(
+                'size-8 flex items-center rounded-full justify-center shrink-0 bg-background',
+                showAssistantIcon ? 'ring-1 ring-border' : '',
+              )}
+            >
               <div className="translate-y-px">
-                <SparklesIcon size={14} />
+                <SparklesIcon
+                  color={showAssistantIcon ? undefined : 'black'}
+                  size={14}
+                />
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* User message avatar */}
-          {message.role === 'user' && (
+          {isUserMessageEvent && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
               <div className="translate-y-px">
                 <UserIcon size={14} />
@@ -133,7 +157,7 @@ const PurePreviewMessage = ({
             )}
 
             {/* Handle system message content - AI reasoning */}
-            {message.role === 'system' && message.content && (
+            {isToolMessageEvent && message.content && (
               <div className="flex flex-col gap-2">
                 <div
                   data-testid="reasoning-content"
@@ -148,23 +172,50 @@ const PurePreviewMessage = ({
             )}
 
             {/* Handle assistant message content */}
-            {message.role === 'assistant' && message.content && (
-              <div className="flex flex-col gap-4">
-                <div
-                  data-testid="message-content"
-                  className="flex flex-col gap-4"
-                >
-                  <Markdown>{message.content}</Markdown>
-                </div>
+            {(messageRole === 'assistant' || isAssistantMessageEvent) &&
+              message.content && (
+                <div className="flex flex-col gap-4">
+                  <div
+                    data-testid="message-content"
+                    className="flex flex-col gap-4"
+                  >
+                    <Markdown>{message.content}</Markdown>
+                  </div>
 
-                {message.reasoning && (
-                  <MessageReasoning
-                    isLoading={isLoading}
-                    reasoning={message.reasoning}
-                  />
-                )}
-              </div>
-            )}
+                  {/* {message.reasoning && (
+                    <MessageReasoning
+                      isLoading={isLoading}
+                      reasoning={message.reasoning}
+                    />
+                  )} */}
+                </div>
+              )}
+
+            {messageRole === 'assistant' && message.tool_calls ? (
+              <ToolResult
+                toolCalls={message.tool_calls}
+                onAccept={() => {
+                  // Refresh the message to reflect the updated task status
+                  // (actual status update happens in ToolResult component)
+                  setMessages((prev) => [...prev]);
+                }}
+                onReject={() => {
+                  // Refresh the message to reflect the updated task status
+                  // (actual status update happens in ToolResult component)
+                  setMessages((prev) => [...prev]);
+                }}
+                onAcceptAll={() => {
+                  // Refresh the message to reflect all tasks accepted
+                  // (actual status update happens in ToolResult component)
+                  setMessages((prev) => [...prev]);
+                }}
+                onRejectAll={() => {
+                  // Refresh the message to reflect all tasks rejected
+                  // (actual status update happens in ToolResult component)
+                  setMessages((prev) => [...prev]);
+                }}
+              />
+            ) : null}
 
             {/* Handle artifact attachments separately */}
             {message.attachments && (
@@ -208,18 +259,23 @@ const PurePreviewMessage = ({
             )}
 
             {/* Handle user message content with edit capability */}
-            {message.role === 'user' &&
+            {isUserMessageEvent &&
               message.content &&
               (mode === 'view' ? (
                 <div className="flex flex-row gap-2 items-start">
                   <div
                     data-testid="message-content"
-                    className="bg-primary text-primary-foreground px-3 py-2 rounded-xl"
+                    className={cn(
+                      'px-3 py-2 rounded-xl',
+                      isUserMessageEvent
+                        ? 'bg-neutral-800 border border-border text-foreground'
+                        : 'bg-neutral-800 text-white',
+                    )}
                   >
                     <Markdown>{message.content}</Markdown>
                   </div>
 
-                  {!isReadonly && (
+                  {!isReadonly && !isUserMessageEvent && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -250,15 +306,31 @@ const PurePreviewMessage = ({
                   />
                 </div>
               ))}
+
+            {/* Display human_in_the_loop data if available */}
+            {/* {message.human_in_the_loop && (
+              <div className="text-sm text-muted-foreground mt-1">
+                {message.human_in_the_loop.data && (
+                  <div className="flex flex-col gap-2 border border-border rounded-md p-3 bg-muted/20">
+                    <div className="text-xs font-medium text-foreground/80">
+                      Human Interaction:
+                    </div>
+                    <pre className="text-xs overflow-auto whitespace-pre-wrap">
+                      {JSON.stringify(message.human_in_the_loop.data, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )} */}
           </div>
         </div>
 
-        {/* Message actions for assistant messages */}
-        {message.role === 'assistant' && !isLoading && (
-          <div className="flex w-full justify-start gap-2 pl-12 mt-1">
-            <MessageActions chatId={chatId} message={message} />
-          </div>
-        )}
+        {/* Message actions component */}
+        {/* <MessageActions
+          message={message}
+          isLoading={isLoading}
+          reload={reload as any}
+        /> */}
       </motion.div>
     </AnimatePresence>
   );

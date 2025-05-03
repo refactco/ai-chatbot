@@ -15,9 +15,9 @@
 
 'use client';
 
+import { initialArtifactData, useArtifact } from '@/hooks/use-artifact';
 import { useEffect, useRef, useState } from 'react';
 import { artifactDefinitions, type ArtifactKind } from './artifact';
-import { initialArtifactData, useArtifact } from '@/hooks/use-artifact';
 
 // Define Suggestion type here since we can't import it
 interface Suggestion {
@@ -71,6 +71,8 @@ export function DataStreamHandler({ id }: { id: string }) {
           setMetadata,
         });
       }
+
+      console.log({ delta });
 
       setArtifact((draftArtifact) => {
         if (!draftArtifact) {

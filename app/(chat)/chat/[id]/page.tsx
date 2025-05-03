@@ -14,13 +14,12 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Chat } from '@/components/chat';
-import { DataStreamHandler } from '@/components/data-stream-handler';
-import type { Message } from '@/lib/schema';
 import type { UIMessage } from '@/lib/api/types';
+import type { Message } from '@/lib/schema';
 import { apiService } from '@/lib/services/api-service';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // Mock user session for authentication bypass
 // Note: This will be replaced with proper Google OAuth later
@@ -103,7 +102,7 @@ export default function Page() {
         initialMessages={convertToUIMessages(messages)}
         isReadonly={false} // Always set readonly to false
       />
-      <DataStreamHandler id={id} />
+      {/* <DataStreamHandler id={id} /> */}
     </>
   );
 }
