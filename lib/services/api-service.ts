@@ -602,32 +602,34 @@ export const apiService = {
 function formatEventContent(event: any): string {
   const { type, content, data } = event;
 
+  return content;
+
   // Handle text content events
-  if (content && typeof content === 'string') {
-    return content;
-  }
+  // if (content && typeof content === 'string') {
+  //   return content;
+  // }
 
-  // Format data objects for different event types
-  if (data) {
-    switch (type) {
-      case 'selected_tool':
-        return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
+  // // Format data objects for different event types
+  // if (data) {
+  //   switch (type) {
+  //     case 'selected_tool':
+  //       return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
 
-      case 'tool_called':
-        return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
+  //     case 'tool_called':
+  //       return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
 
-      case 'tool_result':
-        return data.success
-          ? `✅ Tool result:\n${formatJsonData(data.result)}`
-          : `❌ Error: ${data.result || 'Unknown error'}`;
+  //     case 'tool_result':
+  //       return data.success
+  //         ? `✅ Tool result:\n${formatJsonData(data.result)}`
+  //         : `❌ Error: ${data.result || 'Unknown error'}`;
 
-      default:
-        return `${type}:\n${formatJsonData(data)}`;
-    }
-  }
+  //     default:
+  //       return `${type}:\n${formatJsonData(data)}`;
+  //   }
+  // }
 
-  // Fallback for any other format
-  return `${type}: ${JSON.stringify(event, null, 2)}`;
+  // // Fallback for any other format
+  // return `${type}: ${JSON.stringify(event, null, 2)}`;
 }
 
 // Helper to format JSON data with truncation

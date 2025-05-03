@@ -172,48 +172,47 @@ const PurePreviewMessage = ({
             )}
 
             {/* Handle assistant message content */}
-            {(messageRole === 'assistant' || isAssistantMessageEvent) &&
-              message.content && (
-                <div className="flex flex-col gap-4">
-                  <div
-                    data-testid="message-content"
-                    className="flex flex-col gap-4"
-                  >
-                    <Markdown>{message.content}</Markdown>
-                  </div>
+            {isAssistantMessageEvent && message.content && (
+              <div className="flex flex-col gap-4">
+                <div
+                  data-testid="message-content"
+                  className="flex flex-col gap-4"
+                >
+                  <Markdown>{message.content}</Markdown>
+                </div>
 
-                  {/* {message.reasoning && (
+                {/* {message.reasoning && (
                     <MessageReasoning
                       isLoading={isLoading}
                       reasoning={message.reasoning}
                     />
                   )} */}
-                </div>
-              )}
+              </div>
+            )}
 
-            {messageRole === 'assistant' && message.tool_calls ? (
+            {isAssistantMessageEvent && message.tool_calls ? (
               <ToolResult
                 toolCalls={message.tool_calls}
-                onAccept={() => {
-                  // Refresh the message to reflect the updated task status
-                  // (actual status update happens in ToolResult component)
-                  setMessages((prev) => [...prev]);
-                }}
-                onReject={() => {
-                  // Refresh the message to reflect the updated task status
-                  // (actual status update happens in ToolResult component)
-                  setMessages((prev) => [...prev]);
-                }}
-                onAcceptAll={() => {
-                  // Refresh the message to reflect all tasks accepted
-                  // (actual status update happens in ToolResult component)
-                  setMessages((prev) => [...prev]);
-                }}
-                onRejectAll={() => {
-                  // Refresh the message to reflect all tasks rejected
-                  // (actual status update happens in ToolResult component)
-                  setMessages((prev) => [...prev]);
-                }}
+                // onAccept={() => {
+                //   // Refresh the message to reflect the updated task status
+                //   // (actual status update happens in ToolResult component)
+                //   setMessages((prev) => [...prev]);
+                // }}
+                // onReject={() => {
+                //   // Refresh the message to reflect the updated task status
+                //   // (actual status update happens in ToolResult component)
+                //   setMessages((prev) => [...prev]);
+                // }}
+                // onAcceptAll={() => {
+                //   // Refresh the message to reflect all tasks accepted
+                //   // (actual status update happens in ToolResult component)
+                //   setMessages((prev) => [...prev]);
+                // }}
+                // onRejectAll={() => {
+                //   // Refresh the message to reflect all tasks rejected
+                //   // (actual status update happens in ToolResult component)
+                //   setMessages((prev) => [...prev]);
+                // }}
               />
             ) : null}
 

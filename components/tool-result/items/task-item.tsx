@@ -24,11 +24,11 @@ const TaskItem = (props: ITaskItemProps) => {
     text,
     toolObject,
     icon = <AsanaLogo className="size-3" />,
-    readonly = false,
+    readonly = true,
     onReject,
     onAccept,
   } = props;
-  const { status } = toolObject;
+  const { status, value } = toolObject;
 
   return (
     <div className="flex flex-col gap-1">
@@ -36,7 +36,10 @@ const TaskItem = (props: ITaskItemProps) => {
         <div className="flex items-center space-x-2">
           <span>{icon}</span>
           <div className="flex flex-col">
-            <span className="text-muted-foreground text-sm">{text}</span>
+            <span className="text-muted-foreground text-sm">
+              {text}
+              {value ? <span>: {value}</span> : null}
+            </span>
           </div>
         </div>
         {!readonly ? (

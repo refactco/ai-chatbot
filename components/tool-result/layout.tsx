@@ -43,7 +43,7 @@ const ToolResultLayout = ({
           isCollapsed ? '' : 'border-b border-neutral-800',
         )}
       >
-        <span className="text-muted-foreground text-sm flex items-center gap-2">
+        <span className="text-neutral-300 text-sm flex items-center gap-2">
           {mainIcon} {title}
         </span>
         <div className="flex justify-end items-center">

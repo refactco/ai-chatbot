@@ -145,6 +145,7 @@ export function Chat({
 
                 // Handle user_message and assistant_message event types
                 if (chunk.role === 'user' || chunk.role === 'assistant') {
+                  console.log({ chunk });
                   console.log(`Processing ${chunk.role} with ID:`, chunk.id);
 
                   // Look for existing message with same ID to update

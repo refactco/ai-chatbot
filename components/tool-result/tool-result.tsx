@@ -151,26 +151,26 @@ const ToolResult: React.FC<ToolResultProps> = (props) => {
         title={title}
         showAction={tasks.length > 0}
         // mainIcon={<AsanaLogo />}
-        action={
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-neutral-400"
-              onClick={handleRejectAll}
-            >
-              Reject All
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-neutral-400"
-              onClick={handleAcceptAll}
-            >
-              Accept All
-            </Button>
-          </>
-        }
+        // action={
+        //   <>
+        //     <Button
+        //       variant="ghost"
+        //       size="sm"
+        //       className="text-neutral-400"
+        //       onClick={handleRejectAll}
+        //     >
+        //       Reject All
+        //     </Button>
+        //     <Button
+        //       variant="ghost"
+        //       size="sm"
+        //       className="text-neutral-400"
+        //       onClick={handleAcceptAll}
+        //     >
+        //       Accept All
+        //     </Button>
+        //   </>
+        // }
       >
         {tasks.map((task: any, index: number) => (
           <TaskItem

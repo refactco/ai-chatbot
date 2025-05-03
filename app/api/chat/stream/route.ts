@@ -56,12 +56,12 @@ const mockStreamData = [
           {
             name: 'Design UI of new feature',
           },
-          {
-            name: 'Implement the front-end of the new feature',
-          },
-          {
-            name: 'Implement the back-end of the new feature',
-          },
+          // {
+          //   name: 'Implement the front-end of the new feature',
+          // },
+          // {
+          //   name: 'Implement the back-end of the new feature',
+          // },
         ],
       },
       id: '4',
@@ -79,14 +79,14 @@ const mockStreamData = [
             name: 'Design UI of new feature',
             status: 'accepted',
           },
-          {
-            name: 'Implement the front-end of the new feature',
-            status: 'accepted',
-          },
-          {
-            name: 'Implement the back-end of the new feature',
-            status: 'accepted',
-          },
+          // {
+          //   name: 'Implement the front-end of the new feature',
+          //   status: 'accepted',
+          // },
+          // {
+          //   name: 'Implement the back-end of the new feature',
+          //   status: 'accepted',
+          // },
         ],
       },
       id: '5',
@@ -123,75 +123,88 @@ const mockStreamData = [
       role: 'assistant',
       content:
         'Alright, I assigned the task to Asghar Mirzaei, I added next Monday as the deadline. Let me know if you need anything else, or change anything.',
+      // tool_calls: {
+      //   type: 'request',
+      //   title: "I'm updating the task list:",
+      //   items: [
+      //     {
+      //       gid: '1',
+      //       name: 'Design UI of new feature',
+      //       url: '',
+      //       attributes: [
+      //         {
+      //           label: 'description',
+      //           old: '',
+      //           new: 'Design the UI of the new feature on figma',
+      //         },
+      //         {
+      //           label: 'assignee',
+      //           old: '',
+      //           new: 'Asghar Mirzaei',
+      //         },
+      //         {
+      //           label: 'due_on',
+      //           old: '',
+      //           new: '2025-05-08',
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // },
+      id: '8',
+    },
+  },
+  {
+    event: 'delta',
+    data: {
+      role: 'assistant',
+      // content: '',
       tool_calls: {
         type: 'request',
-        title: "I'm updating the task list:",
+        title: 'Updating the task attribute:',
         items: [
           {
             gid: '1',
-            name: 'Design UI of new feature',
-            url: '',
-            attributes: [
-              {
-                label: 'description',
-                old: '',
-                new: 'Design the UI of the new feature on figma',
-              },
-              {
-                label: 'assignee',
-                old: '',
-                new: 'Asghar Mirzaei',
-              },
-              {
-                label: 'due_on',
-                old: '',
-                new: '2025-05-08',
-              },
-            ],
+            name: 'Description',
+            value: 'Design the UI of the new feature on figma',
           },
+        ],
+      },
+      id: '8',
+    },
+  },
+  {
+    event: 'delta',
+    data: {
+      role: 'assistant',
+      // content: '',
+      tool_calls: {
+        type: 'request',
+        title: 'Updating the task attribute:',
+        items: [
           {
-            gid: '2',
-            name: 'Implement the front-end of the new feature',
-            url: '',
-            attributes: [
-              {
-                label: 'description',
-                old: '',
-                new: 'Implement the front-end side of the new feature',
-              },
-              {
-                label: 'assignee',
-                old: '',
-                new: 'Asghar Mirzaei',
-              },
-              {
-                label: 'due_on',
-                old: '',
-                new: '2025-05-08',
-              },
-            ],
+            gid: '1',
+            name: 'Assignee',
+            value: 'Asghar Mirzaei',
           },
+        ],
+      },
+      id: '8',
+    },
+  },
+  {
+    event: 'delta',
+    data: {
+      role: 'assistant',
+      // content: '',
+      tool_calls: {
+        type: 'request',
+        title: 'Updating the task attribute:',
+        items: [
           {
-            gid: '3',
-            name: 'Implement the back-end of the new feature',
-            url: '',
-            attributes: [
-              {
-                label: 'description',
-                old: '',
-                new: 'Implement the back-end side of the new feature',
-              },
-              {
-                label: 'assignee',
-                old: '',
-                new: 'Asghar Mirzaei',
-              },
-              {
-                label: 'due_on',
-                old: '',
-                new: '2025-05-08',
-              },
-            ],
+            gid: '1',
+            name: 'Due Date',
+            value: '2025-05-09',
           },
         ],
       },
