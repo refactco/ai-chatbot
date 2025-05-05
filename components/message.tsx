@@ -353,8 +353,10 @@ export const PreviewMessage = memo(
 export const ThinkingMessage = () => {
   return (
     <div className="flex items-center gap-4 mx-auto max-w-3xl px-4">
-      <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-        <div className="translate-y-px">
+      <div className="size-8 flex items-center rounded-full justify-center shrink-0">
+        <div className="translate-y-px flex gap-3 animate-pulse duration-1000 items-center">
+          <SparklesIcon size={14} />
+          <span>Thinking</span>
           <SparklesIcon size={14} />
         </div>
       </div>

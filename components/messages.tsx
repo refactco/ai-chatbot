@@ -28,6 +28,7 @@ interface MessagesProps {
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
   isArtifactVisible: boolean;
+  isStreamingComplete: boolean;
 }
 
 /**
@@ -41,6 +42,7 @@ function PureMessages({
   setMessages,
   reload,
   isReadonly,
+  isStreamingComplete,
 }: MessagesProps) {
   // Type assertion to help TypeScript understand the compatibility
   const compatibleMessages = messages as any;
@@ -59,6 +61,8 @@ function PureMessages({
   }, [compatibleMessages, status]);
 
   console.log({ compatibleMessages });
+
+  console.log({ isStreamingComplete, status });
 
   return (
     <div
@@ -95,12 +99,8 @@ function PureMessages({
         );
       })}
 
-      {/* Show thinking indicator when waiting for response */}
-      {status === 'submitted' &&
-        compatibleMessages.length > 0 &&
-        compatibleMessages[compatibleMessages.length - 1].role === 'user' && (
-          <ThinkingMessage key="thinking-message" />
-        )}
+      {/* Show thinking indicator when waiting for response or during streaming until complete */}
+      {isStreamingComplete ? null : <ThinkingMessage key="thinking-message" />}
 
       {/* End anchor element */}
       <div
@@ -122,6 +122,8 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
   if (!equal(prevProps.messages, nextProps.messages)) return false;
+  if (prevProps.isStreamingComplete !== nextProps.isStreamingComplete)
+    return false;
 
   return true;
 });
