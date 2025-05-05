@@ -77,22 +77,14 @@ export interface ChatMessage {
 }
 
 export interface ChatSummary {
-  id: string;
-  title: string;
-  lastMessagePreview: string;
-  createdAt: Date;
-  updatedAt: Date;
-  conversation_id?: string; // From IConversationMessage
-  message_id?: string; // From IConversationMessage
-  parent_message_id?: string | null; // From IConversationMessage
-  user_id?: string; // From IConversationMessage
-  role?: string; // From IConversationMessage
-  content?: any; // From IConversationMessage
-  timestamp?: Date; // From IConversationMessage
-  metadata?: any; // From IConversationMessage
-  tool_calls?: any | null; // From IConversationMessage
-  path?: string[]; // From IConversationMessage
-  schema_version?: number; // From IConversationMessage
+  id: string; // Mapped from _id or conversation_id
+  title: string; // Extracted from content
+  lastMessagePreview: string; // Extracted from content
+  timestamp: string; // From backend conversation structure
+  content: any; // From backend conversation structure
+  conversation_id: string; // From backend conversation structure
+  message_id: string; // From backend conversation structure
+  _id: string; // From backend conversation structure
 }
 
 export interface StreamResponseOptions {
@@ -580,13 +572,34 @@ export const apiService = {
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`${API_CONFIG.BACKEND_URL}/conversations?limit=${limit}&offset=${offset}`);
+    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/conversations?limit=${limit}&offset=${offset}&token=${API_CONFIG.AUTH_TOKEN}`);
 
     if (!response.ok) {
       throw new Error(`Error fetching chat history: ${response.statusText}`);
     }
 
-    return await response.json();
+    const conversations = await response.json();
+    
+    // Transform the response data to match our expected structure
+    return conversations.map((conversation: any) => {
+      const contentStr = typeof conversation.content === 'string' 
+        ? conversation.content 
+        : JSON.stringify(conversation.content);
+      
+      const title = contentStr.substring(0, 30) + (contentStr.length > 30 ? '...' : '');
+      const lastMessagePreview = contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : '');
+      
+      return {
+        id: conversation._id || conversation.conversation_id,
+        title,
+        lastMessagePreview,
+        timestamp: conversation.timestamp,
+        content: conversation.content,
+        conversation_id: conversation.conversation_id,
+        message_id: conversation.message_id,
+        _id: conversation._id
+      };
+    });
   },
 
   // Get chat by ID with its messages

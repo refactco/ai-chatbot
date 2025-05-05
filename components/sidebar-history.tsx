@@ -81,7 +81,7 @@ const groupChatsByDate = (chats: ChatSummary[]): GroupedChats => {
 
   return chats.reduce(
     (groups, chat) => {
-      const chatDate = new Date(chat.createdAt);
+      const chatDate = new Date(chat.timestamp);
 
       if (isToday(chatDate)) {
         groups.today.push(chat);
@@ -183,7 +183,7 @@ export function SidebarHistory() {
             prevChats.filter((chat) => chat.id !== deleteId),
           );
           
-          const response = await fetch(`${API_CONFIG.BACKEND_URL}/conversations/${deleteId}`, {
+          const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/conversations/${deleteId}?token=${API_CONFIG.AUTH_TOKEN}`, {
             method: 'DELETE',
           });
           

@@ -14,7 +14,7 @@
  * with consistent styling and interactive elements.
  */
 
-import type { ChatSummary } from '@/lib/services/mock-api-service';
+import type { ChatSummary } from '@/lib/services/api-service';
 import {
   SidebarMenuAction,
   SidebarMenuButton,
