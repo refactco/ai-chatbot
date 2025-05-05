@@ -72,8 +72,6 @@ export function DataStreamHandler({ id }: { id: string }) {
         });
       }
 
-      console.log({ delta });
-
       setArtifact((draftArtifact) => {
         if (!draftArtifact) {
           return { ...initialArtifactData, status: 'streaming' };

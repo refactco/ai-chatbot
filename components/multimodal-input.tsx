@@ -200,7 +200,6 @@ function PureMultimodalInput({
     try {
       // In this mock implementation, we're just returning a fake URL
       // In a real implementation, you would upload the file to a server
-      console.log('Uploading file:', file.name);
 
       return {
         type: file.type,

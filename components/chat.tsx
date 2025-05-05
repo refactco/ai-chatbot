@@ -73,11 +73,12 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const [isStreamingComplete, setIsStreamingComplete] = useState(true);
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    undefined,
+  );
   const isArtifactVisible = useArtifactSelector(
     (state: { isVisible: boolean }) => state.isVisible,
   );
-
-  console.log({ messages });
 
   /**
    * Custom submit handler that uses the API service
@@ -109,12 +110,24 @@ export function Chat({
       setAttachments([]);
 
       setIsStreamingComplete(false);
-      
-      // Stream the AI response
+
+      // Stream the AI response, passing the conversationId if we have one
       await apiService.streamResponse(
         userMessage.content,
         {
+          onStart: (conversationId) => {
+            setConversationId(conversationId);
+          },
           onChunk: (chunk) => {
+            // // Check if the chunk has a conversation_id and store it
+            // if (
+            //   typeof chunk !== 'string' &&
+            //   chunk.conversationId &&
+            //   !conversationId
+            // ) {
+            //   setConversationId(chunk.conversationId);
+            // }
+
             // For each chunk, update the appropriate message
             setMessages((messages) => {
               if (typeof chunk === 'string') {
@@ -122,8 +135,6 @@ export function Chat({
                 const assistantMessageIndex = messages.findIndex(
                   (msg) => msg.role === 'assistant' && msg.content === '',
                 );
-
-                console.log({ assistantMessageIndex, messages });
 
                 if (assistantMessageIndex === -1) {
                   return [
@@ -148,9 +159,6 @@ export function Chat({
 
                 // Handle user_message and assistant_message event types
                 if (chunk.role === 'user' || chunk.role === 'assistant') {
-                  console.log({ chunk });
-                  console.log(`Processing ${chunk.role} with ID:`, chunk.id);
-
                   // Look for existing message with same ID to update
                   const existingIndex = messages.findIndex(
                     (msg) => msg.id === chunk.id,
@@ -158,10 +166,6 @@ export function Chat({
 
                   if (existingIndex !== -1) {
                     // Update existing message
-                    console.log(
-                      'Updating existing message at index:',
-                      existingIndex,
-                    );
                     const updatedMessages = [...messages];
                     updatedMessages[existingIndex] = {
                       ...updatedMessages[existingIndex],
@@ -176,7 +180,6 @@ export function Chat({
                     return updatedMessages;
                   } else {
                     // Add as new message
-                    console.log(`Adding new ${chunk.role} message`);
                     return [
                       ...messages,
                       {
@@ -191,11 +194,6 @@ export function Chat({
 
                 // For streaming responses (ongoing AI response), update existing message
                 if (chunk.id && chunk.id.includes('response-')) {
-                  console.log(
-                    'Processing streaming response chunk with ID:',
-                    chunk.id,
-                  );
-
                   // Look for existing message or add new one
                   const existingIndex = messages.findIndex(
                     (msg) =>
@@ -205,10 +203,6 @@ export function Chat({
 
                   if (existingIndex !== -1) {
                     // Update existing response
-                    console.log(
-                      'Updating existing response at index:',
-                      existingIndex,
-                    );
                     const updatedMessages = [...messages];
                     updatedMessages[existingIndex] = {
                       ...updatedMessages[existingIndex],
@@ -217,7 +211,6 @@ export function Chat({
                     return updatedMessages;
                   } else {
                     // Add new response message
-                    console.log('Adding new streaming response');
                     return [
                       ...messages,
                       {
@@ -241,19 +234,11 @@ export function Chat({
             });
           },
           onFinish: (message) => {
-            // When done, ensure the final message is properly formatted
-            setMessages((messages) =>
-              messages.map((msg) => {
-                // Only update the assistant message (not the reasoning message)
-                if (msg.id === message.id) {
-                  return {
-                    ...msg,
-                    content: message.content,
-                  };
-                }
-                return msg;
-              }),
-            );
+            // If we received a conversation_id in the final message, store it
+            if (message.conversationId && !conversationId) {
+              setConversationId(message.conversationId);
+            }
+
             setIsStreamingComplete(true);
           },
           onError: (error) => {
@@ -263,6 +248,7 @@ export function Chat({
         },
         undefined,
         userMessage.attachments || [],
+        conversationId,
       );
     } catch (error) {
       console.error('Error in handleSubmit:', error);

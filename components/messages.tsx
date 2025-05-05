@@ -60,10 +60,6 @@ function PureMessages({
     }
   }, [compatibleMessages, status]);
 
-  console.log({ compatibleMessages });
-
-  console.log({ isStreamingComplete, status });
-
   return (
     <div
       ref={messagesContainerRef}

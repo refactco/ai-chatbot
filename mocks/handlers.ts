@@ -80,8 +80,6 @@ export const handlers = [
       chatId = 'dev-static-chat-id',
     } = (await request.json()) as ChatMessageRequest;
 
-    console.log('Sending message to AI:', message, attachments);
-
     // Create a user message
     const userMessage: ChatMessage = {
       id: generateUUID(),
@@ -122,7 +120,6 @@ export const handlers = [
    */
   /*
   http.post('/api/chat/stream', async ({ request }) => {
-    console.log({ request });
     // Always return a single, generic assistant message
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

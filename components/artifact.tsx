@@ -16,8 +16,15 @@
  * rich content creation and management alongside the chat interface.
  */
 
+import { imageArtifact } from '@/artifacts/image/client';
+import { sheetArtifact } from '@/artifacts/sheet/client';
+import { textArtifact } from '@/artifacts/text/client';
+import { useArtifact } from '@/hooks/use-artifact';
 import type { Attachment, UIMessage, UseChatHelpers } from '@/lib/api/types';
+import type { Document, Vote } from '@/lib/schema';
+import { fetcher } from '@/lib/utils';
 import { formatDistance } from 'date-fns';
+import equal from 'fast-deep-equal';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   type Dispatch,
@@ -25,25 +32,18 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
-  useState,
   useMemo,
+  useState,
 } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
-import type { Document, Vote } from '@/lib/schema';
-import { fetcher } from '@/lib/utils';
-import { MultimodalInput } from './multimodal-input';
-import { Toolbar } from './toolbar';
-import { VersionFooter } from './version-footer';
 import { ArtifactActions } from './artifact-actions';
 import { ArtifactCloseButton } from './artifact-close-button';
 import { ArtifactMessages } from './artifact-messages';
+import { MultimodalInput } from './multimodal-input';
+import { Toolbar } from './toolbar';
 import { useSidebar } from './ui/sidebar';
-import { useArtifact } from '@/hooks/use-artifact';
-import { imageArtifact } from '@/artifacts/image/client';
-import { sheetArtifact } from '@/artifacts/sheet/client';
-import { textArtifact } from '@/artifacts/text/client';
-import equal from 'fast-deep-equal';
+import { VersionFooter } from './version-footer';
 
 /**
  * Available artifact type definitions
@@ -306,17 +306,9 @@ function PureArtifact({
 
           // Clear dirty flag after creating new version with a longer delay for visibility
           setTimeout(() => {
-            console.log('Clearing dirty flag for local document');
             setIsContentDirty(false);
             setDocument(newDocument); // Set as current document so timestamp updates
           }, 1000);
-
-          // Log for debugging
-          console.log('Created new version:', newDocument);
-          console.log(
-            'Total versions:',
-            [...currentDocuments, newDocument].length,
-          );
 
           return [...currentDocuments, newDocument];
         });
@@ -385,7 +377,6 @@ function PureArtifact({
     (updatedContent: string, debounce: boolean) => {
       // Always set dirty flag immediately to provide visual feedback
       setIsContentDirty(true);
-      console.log('Content is dirty, saving...');
 
       if (document && updatedContent !== document.content) {
         if (debounce) {

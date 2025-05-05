@@ -153,7 +153,6 @@ export const mockApiService = {
     chatId?: string,
   ): Promise<ChatMessage> => {
     // Log for debugging
-    console.log('Sending message to AI:', message, attachments);
 
     const currentChatId = chatId || 'dev-static-chat-id';
 
@@ -356,8 +355,6 @@ Based on my analysis, I believe the user is looking for information about reason
    * This simulates fetching chat history from the backend
    */
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    console.log('Fetching chat history with limit:', limit, 'offset:', offset);
-
     // Get all chats, sort by updatedAt (newest first), and apply pagination
     return Object.values(chatHistory)
       .map((entry) => entry.chat)
@@ -371,8 +368,6 @@ Based on my analysis, I believe the user is looking for information about reason
   getChatById: async (
     chatId: string,
   ): Promise<{ chat: ChatSummary; messages: ChatMessage[] } | null> => {
-    console.log('Fetching chat by ID:', chatId);
-
     if (!chatHistory[chatId]) {
       return null;
     }

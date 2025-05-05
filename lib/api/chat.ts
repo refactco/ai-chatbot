@@ -135,10 +135,15 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
           chatId,
         );
 
+        // Get conversation ID from the most recent message if available
+        const lastMessage = messages[messages.length - 1];
+        const existingConversationId = lastMessage?.conversationId;
+
         // Stream response from API
         await apiService.streamResponse(
           userMessage.content,
           {
+            onStart: () => {},
             onChunk: (chunkOrMessage) => {
               if (typeof chunkOrMessage !== 'string') {
                 setMessages((messages) => [...messages, chunkOrMessage]);
@@ -166,6 +171,7 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
           },
           chatId,
           userMessage.attachments,
+          existingConversationId, // Pass the conversationId if available
         );
 
         return userMessage.id;
@@ -180,7 +186,7 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
         return null;
       }
     },
-    [append, chatId, input, onError, onFinish],
+    [append, chatId, input, onError, onFinish, messages],
   );
 
   return {

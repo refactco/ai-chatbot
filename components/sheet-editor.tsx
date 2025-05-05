@@ -56,14 +56,14 @@ const PureSpreadsheetEditor = ({
   const [lastSavedContent, setLastSavedContent] = useState(content);
 
   // Debug logging for component lifecycle and props changes
-  useEffect(() => {
-    console.log('SpreadsheetEditor rendering with:', {
-      contentLength: content?.length,
-      isCurrentVersion,
-      currentVersionIndex,
-      status,
-    });
-  }, [content, isCurrentVersion, currentVersionIndex, status]);
+  // useEffect(() => {
+  //   console.log('SpreadsheetEditor rendering with:', {
+  //     contentLength: content?.length,
+  //     isCurrentVersion,
+  //     currentVersionIndex,
+  //     status,
+  //   });
+  // }, [content, isCurrentVersion, currentVersionIndex, status]);
 
   /**
    * Parses CSV content into grid data structure
@@ -72,8 +72,6 @@ const PureSpreadsheetEditor = ({
    */
   const parseData = useMemo(() => {
     if (!content) return Array(MIN_ROWS).fill(Array(MIN_COLS).fill(''));
-
-    console.log('Parsing content of length:', content.length);
     try {
       const result = parse<string[]>(content, { skipEmptyLines: true });
 
@@ -154,7 +152,6 @@ const PureSpreadsheetEditor = ({
 
   // Reset rows when content changes (e.g., when version changes)
   useEffect(() => {
-    console.log('Content changed, resetting rows');
     setLocalRows(initialRows);
     setLastSavedContent(content);
   }, [initialRows, content]);
@@ -166,7 +163,6 @@ const PureSpreadsheetEditor = ({
    */
   const generateCsv = useCallback((data: any[][]) => {
     const csv = unparse(data);
-    console.log('Generated CSV of length:', csv.length);
     return csv;
   }, []);
 
@@ -178,7 +174,6 @@ const PureSpreadsheetEditor = ({
   const handleRowsChange = useCallback(
     (newRows: any[]) => {
       if (!isCurrentVersion) {
-        console.log('Ignoring changes in view-only mode');
         return;
       }
 
@@ -193,7 +188,6 @@ const PureSpreadsheetEditor = ({
 
       // Only save if content has actually changed
       if (newCsvContent !== lastSavedContent) {
-        console.log('Content changed, saving...');
         setLastSavedContent(newCsvContent);
         saveContent(newCsvContent, true);
       }
@@ -240,34 +234,15 @@ const PureSpreadsheetEditor = ({
  */
 function areEqual(prevProps: SheetEditorProps, nextProps: SheetEditorProps) {
   if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {
-    console.log(
-      'Version changed from',
-      prevProps.currentVersionIndex,
-      'to',
-      nextProps.currentVersionIndex,
-    );
     return false;
   }
   if (prevProps.isCurrentVersion !== nextProps.isCurrentVersion) {
-    console.log(
-      'isCurrentVersion changed from',
-      prevProps.isCurrentVersion,
-      'to',
-      nextProps.isCurrentVersion,
-    );
     return false;
   }
   if (prevProps.status !== nextProps.status) {
-    console.log(
-      'Status changed from',
-      prevProps.status,
-      'to',
-      nextProps.status,
-    );
     return false;
   }
   if (prevProps.content !== nextProps.content) {
-    console.log('Content changed');
     return false;
   }
   return true;

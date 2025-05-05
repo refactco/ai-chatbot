@@ -22,18 +22,15 @@ export async function initializeMocks() {
   if (typeof window === 'undefined') {
     // For Node.js environment (SSR)
     if (USE_REAL_API) {
-      console.log('🔶 Using real API endpoints - MSW server not started');
       return null;
     }
 
     const { server } = await import('./node');
     server.listen({ onUnhandledRequest: 'bypass' });
-    console.log('🔶 MSW server started');
     return server;
   } else {
     // For browser environment
     if (USE_REAL_API) {
-      console.log('🔶 Using real API endpoints - MSW worker not started');
       return null;
     }
 
@@ -45,7 +42,6 @@ export async function initializeMocks() {
           url: '/mockServiceWorker.js',
         },
       });
-      console.log('🔶 MSW worker started');
       return worker;
     }
   }

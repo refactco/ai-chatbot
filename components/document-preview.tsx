@@ -17,20 +17,20 @@
 
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import type { MouseEvent } from 'react';
-import type { ArtifactKind, UIArtifact } from './artifact';
-import { FileIcon, FullscreenIcon, ImageIcon, LoaderIcon } from './icons';
-import { cn, fetcher } from '@/lib/utils';
-import type { Document } from '@/lib/schema';
-import { InlineDocumentSkeleton } from './document-skeleton';
-import useSWR from 'swr';
-import { Editor } from './text-editor';
-import { DocumentToolCall, DocumentToolResult } from './document';
 import { useArtifact } from '@/hooks/use-artifact';
-import { SpreadsheetEditor } from './sheet-editor';
-import { ImageEditor } from './image-editor';
+import type { Document } from '@/lib/schema';
+import { cn, fetcher } from '@/lib/utils';
 import equal from 'fast-deep-equal';
+import type { MouseEvent } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import useSWR from 'swr';
+import type { ArtifactKind, UIArtifact } from './artifact';
+import { DocumentToolCall, DocumentToolResult } from './document';
+import { InlineDocumentSkeleton } from './document-skeleton';
+import { FileIcon, FullscreenIcon, ImageIcon, LoaderIcon } from './icons';
+import { ImageEditor } from './image-editor';
+import { SpreadsheetEditor } from './sheet-editor';
+import { Editor } from './text-editor';
 
 /**
  * Props for the DocumentPreview component
@@ -249,8 +249,6 @@ const PureHitboxLayer = ({
         },
         status: 'idle',
       }));
-
-      console.log('Opening artifact in fullscreen', artifactData);
     },
     [setArtifact, result],
   );

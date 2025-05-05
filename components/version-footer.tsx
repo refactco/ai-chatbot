@@ -19,16 +19,16 @@
 
 import { isAfter } from 'date-fns';
 import { motion } from 'framer-motion';
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 
 import type { Document } from '@/lib/schema';
 import { getDocumentTimestampByIndex } from '@/lib/utils';
 
+import { useArtifact } from '@/hooks/use-artifact';
 import { LoaderIcon } from './icons';
 import { Button } from './ui/button';
-import { useArtifact } from '@/hooks/use-artifact';
 
 /**
  * Props for the VersionFooter component
@@ -81,51 +81,32 @@ export const VersionFooter = ({
     if (!documents || currentVersionIndex < 0) return;
 
     setIsMutating(true);
-    console.log('Restoring local version:', currentVersionIndex);
-    console.log('Current documents:', documents);
 
     try {
       // Get current version timestamp for comparison
       const currentTimestamp = documents[currentVersionIndex].createdAt;
-      console.log('Selected version timestamp:', currentTimestamp);
 
       // Filter out all versions after this one
       const restoredVersions = documents.filter(
         (doc) => !isAfter(new Date(doc.createdAt), new Date(currentTimestamp)),
       );
-      console.log('Filtered versions to keep:', restoredVersions);
 
       // Save to local storage
       localStorage.setItem(localStorageKey, JSON.stringify(restoredVersions));
-      console.log('Saved to localStorage with key:', localStorageKey);
 
       // Update parent component state directly instead of page reload
       if (window.location) {
-        console.log('Reloading page to apply changes');
         window.location.reload();
-      } else {
-        console.log('No window.location, changes might not apply immediately');
       }
     } catch (error) {
-      console.error('Error restoring local version:', error);
     } finally {
       setIsMutating(false);
     }
   }, [documents, currentVersionIndex, localStorageKey]);
 
   if (!documents) {
-    console.log('No documents available for version footer');
     return null;
   }
-
-  // Debug version information
-  console.log('Version footer rendering with:', {
-    documentId: artifact.documentId,
-    isLocalDocument,
-    localStorageKey,
-    documentsCount: documents.length,
-    currentVersionIndex,
-  });
 
   return (
     <motion.div
