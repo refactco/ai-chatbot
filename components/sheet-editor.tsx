@@ -17,11 +17,11 @@
 
 'use client';
 
-import React, { memo, useEffect, useMemo, useState, useCallback } from 'react';
-import DataGrid, { textEditor } from 'react-data-grid';
-import { parse, unparse } from 'papaparse';
-import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
+import { parse, unparse } from 'papaparse';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import DataGrid, { textEditor } from 'react-data-grid';
 
 import 'react-data-grid/lib/styles.css';
 
@@ -205,7 +205,7 @@ const PureSpreadsheetEditor = ({
   const isReadOnly = !isCurrentVersion;
 
   return (
-    <div className="h-full w-full relative">
+    <div className="size-full relative">
       {/* Version indicator badge for non-current versions */}
       {isReadOnly && (
         <div className="absolute top-0 right-0 z-10 bg-yellow-500 text-black px-2 py-1 text-xs rounded-bl m-1">

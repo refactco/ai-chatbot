@@ -35,14 +35,7 @@ const mockSession = {
 export default function Page() {
   // Extract chat ID from URL parameters
   const params = useParams();
-  if (!params?.id) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        Invalid chat ID
-      </div>
-    );
-  }
-  const id = params.id as string;
+  const id = params?.id as string;
 
   // State for storing chat data, messages, and loading status
   const [chat, setChat] = useState<any>(null);
@@ -51,6 +44,12 @@ export default function Page() {
 
   // Fetch chat data when component mounts or ID changes
   useEffect(() => {
+    // Skip fetching if no ID is provided
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         // Fetch chat and messages from API
@@ -76,6 +75,15 @@ export default function Page() {
       content: message.content,
       createdAt: new Date(message.createdAt),
     }));
+  }
+
+  // Display invalid chat ID error if no ID is provided
+  if (!id) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        Invalid chat ID
+      </div>
+    );
   }
 
   // Display loading state
