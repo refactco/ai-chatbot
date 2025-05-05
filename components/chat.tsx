@@ -72,6 +72,7 @@ export function Chat({
   });
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
+  const [isStreamingComplete, setIsStreamingComplete] = useState(true);
   const isArtifactVisible = useArtifactSelector(
     (state: { isVisible: boolean }) => state.isVisible,
   );
@@ -107,6 +108,8 @@ export function Chat({
       setInput('');
       setAttachments([]);
 
+      setIsStreamingComplete(false);
+      
       // Stream the AI response
       await apiService.streamResponse(
         userMessage.content,
@@ -251,6 +254,7 @@ export function Chat({
                 return msg;
               }),
             );
+            setIsStreamingComplete(true);
           },
           onError: (error) => {
             console.error('Error streaming response:', error);
@@ -263,6 +267,7 @@ export function Chat({
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       toast.error('An error occurred. Please try again.');
+      setIsStreamingComplete(true);
     }
   };
 
@@ -280,6 +285,7 @@ export function Chat({
           reload={reload as any}
           isReadonly={isReadonly}
           isArtifactVisible={isArtifactVisible}
+          isStreamingComplete={isStreamingComplete}
         />
 
         <form
