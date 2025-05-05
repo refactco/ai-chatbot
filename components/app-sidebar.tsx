@@ -65,6 +65,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     setOpenMobile(false);
                     router.push('/');
                     router.refresh();
+                    import('@/lib/utils/chat-history').then(({ refreshChatHistory }) => {
+                      refreshChatHistory();
+                    });
                   }}
                 >
                   <PlusIcon />

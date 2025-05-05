@@ -52,6 +52,9 @@ function PureChatHeader({
               onClick={() => {
                 router.push('/');
                 router.refresh();
+                import('@/lib/utils/chat-history').then(({ refreshChatHistory }) => {
+                  refreshChatHistory();
+                });
               }}
             >
               <PlusIcon />

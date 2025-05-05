@@ -21,6 +21,7 @@ import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import useSWR, { useSWRConfig } from 'swr';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +44,7 @@ import {
   API_CONFIG,
   type ChatSummary,
 } from '@/lib/services/api-service';
+import { CHAT_HISTORY_KEY } from '@/lib/utils/chat-history';
 
 /**
  * Structure for grouping chats by date categories
@@ -128,24 +130,30 @@ export function SidebarHistory() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
 
-  // Fetch chat history from API on initial load
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      try {
-        setIsLoading(true);
-        const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
-        setChatHistory(chats);
-        setHasMore(chats.length === PAGE_SIZE);
-        setOffset(PAGE_SIZE);
-      } catch (error) {
-        console.error('Error fetching chat history:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChatHistory();
-  }, []);
+  // Use SWR for chat history management
+  const { mutate } = useSWRConfig();
+  
+  const fetchChatHistory = async () => {
+    try {
+      setIsLoading(true);
+      const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
+      setChatHistory(chats);
+      setHasMore(chats.length === PAGE_SIZE);
+      setOffset(PAGE_SIZE);
+      return chats;
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Use SWR to fetch chat history
+  const { data } = useSWR(CHAT_HISTORY_KEY, fetchChatHistory, {
+    revalidateOnFocus: false,
+    dedupingInterval: 5000, // Avoid duplicate requests
+  });
   
   const loadMoreChats = async () => {
     if (!hasMore || isLoading) return;
