@@ -62,6 +62,8 @@ function PureMessages({
 
   console.log({ compatibleMessages });
 
+  console.log({ isStreamingComplete, status });
+
   return (
     <div
       ref={messagesContainerRef}
@@ -98,11 +100,7 @@ function PureMessages({
       })}
 
       {/* Show thinking indicator when waiting for response or during streaming until complete */}
-      {(status === 'submitted' || (status === 'streaming' && !isStreamingComplete)) &&
-        compatibleMessages.length > 0 &&
-        compatibleMessages[compatibleMessages.length - 1].role === 'user' && (
-          <ThinkingMessage key="thinking-message" />
-        )}
+      {isStreamingComplete ? null : <ThinkingMessage key="thinking-message" />}
 
       {/* End anchor element */}
       <div
@@ -124,7 +122,8 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
   if (!equal(prevProps.messages, nextProps.messages)) return false;
-  if (prevProps.isStreamingComplete !== nextProps.isStreamingComplete) return false;
+  if (prevProps.isStreamingComplete !== nextProps.isStreamingComplete)
+    return false;
 
   return true;
 });
