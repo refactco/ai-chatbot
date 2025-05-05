@@ -21,6 +21,7 @@ import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import useSWR, { useSWRConfig } from 'swr';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,9 +40,11 @@ import {
 } from '@/components/ui/sidebar';
 import { ChatItem } from './sidebar-history-item';
 import {
-  mockApiService,
+  apiService,
+  API_CONFIG,
   type ChatSummary,
-} from '@/lib/services/mock-api-service';
+} from '@/lib/services/api-service';
+import { CHAT_HISTORY_KEY } from '@/lib/utils/chat-history';
 
 /**
  * Structure for grouping chats by date categories
@@ -80,7 +83,7 @@ const groupChatsByDate = (chats: ChatSummary[]): GroupedChats => {
 
   return chats.reduce(
     (groups, chat) => {
-      const chatDate = new Date(chat.createdAt);
+      const chatDate = new Date(chat.timestamp);
 
       if (isToday(chatDate)) {
         groups.today.push(chat);
@@ -124,23 +127,53 @@ export function SidebarHistory() {
   const [chatHistory, setChatHistory] = useState<ChatSummary[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
 
-  // Fetch chat history from mock API on initial load
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      try {
-        setIsLoading(true);
-        const chats = await mockApiService.getChatHistory(PAGE_SIZE);
-        setChatHistory(chats);
-      } catch (error) {
-        console.error('Error fetching chat history:', error);
-      } finally {
-        setIsLoading(false);
+  // Use SWR for chat history management
+  const { mutate } = useSWRConfig();
+  
+  const fetchChatHistory = async () => {
+    try {
+      setIsLoading(true);
+      const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
+      setChatHistory(chats);
+      setHasMore(chats.length === PAGE_SIZE);
+      setOffset(PAGE_SIZE);
+      return chats;
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Use SWR to fetch chat history
+  const { data } = useSWR(CHAT_HISTORY_KEY, fetchChatHistory, {
+    revalidateOnFocus: false,
+    dedupingInterval: 5000, // Avoid duplicate requests
+  });
+  
+  const loadMoreChats = async () => {
+    if (!hasMore || isLoading) return;
+    
+    try {
+      setIsLoading(true);
+      const moreChats = await apiService.getChatHistory(PAGE_SIZE, offset);
+      if (moreChats.length === 0) {
+        setHasMore(false);
+      } else {
+        setChatHistory((prevChats) => [...prevChats, ...moreChats]);
+        setOffset((prevOffset) => prevOffset + moreChats.length);
+        setHasMore(moreChats.length === PAGE_SIZE);
       }
-    };
-
-    fetchChatHistory();
-  }, []);
+    } catch (error) {
+      console.error('Error fetching more chat history:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    * Handles chat deletion with toast notification feedback
@@ -148,16 +181,32 @@ export function SidebarHistory() {
    * Redirects to home page if current chat is deleted
    */
   const handleDelete = async () => {
+    if (!deleteId) return;
+    
     toast.promise(
-      new Promise((resolve) => {
-        setTimeout(() => {
-          // Remove from local state
+      (async () => {
+        try {
+          // Optimistically update UI
           setChatHistory((prevChats) =>
             prevChats.filter((chat) => chat.id !== deleteId),
           );
-          resolve('Chat deleted successfully');
-        }, 500);
-      }),
+          
+          const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/conversations/${deleteId}?token=${API_CONFIG.AUTH_TOKEN}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to delete chat: ${response.statusText}`);
+          }
+          
+          return 'Chat deleted successfully';
+        } catch (error) {
+          console.error('Error deleting chat:', error);
+          const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
+          setChatHistory(chats);
+          throw error;
+        }
+      })(),
       {
         loading: 'Deleting chat...',
         success: 'Chat deleted successfully',
@@ -231,7 +280,20 @@ export function SidebarHistory() {
               const groupedChats = groupChatsByDate(chatHistory);
 
               return (
-                <div className="flex flex-col gap-6">
+                <div 
+                  className="flex flex-col gap-6"
+                  onScroll={(e) => {
+                    const target = e.target as HTMLDivElement;
+                    if (
+                      target.scrollHeight - target.scrollTop <= target.clientHeight + 100 &&
+                      hasMore &&
+                      !isLoading
+                    ) {
+                      loadMoreChats();
+                    }
+                  }}
+                  style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
+                >
                   {/* Today's chats section */}
                   {groupedChats.today.length > 0 && (
                     <div>
@@ -334,6 +396,13 @@ export function SidebarHistory() {
                           setOpenMobile={setOpenMobile}
                         />
                       ))}
+                    </div>
+                  )}
+                  
+                  {/* Loading indicator for pagination */}
+                  {isLoading && hasMore && (
+                    <div className="flex justify-center py-4">
+                      <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-sidebar-foreground"></div>
                     </div>
                   )}
                 </div>

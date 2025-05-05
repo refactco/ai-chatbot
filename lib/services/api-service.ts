@@ -14,7 +14,7 @@
 import type { Attachment } from '@/lib/api/types';
 
 // Backend API configuration
-const API_CONFIG = {
+export const API_CONFIG = {
   // For direct backend access (server-side only)
   BACKEND_URL: 'http://localhost:3333',
   // For client-side access (uses real API endpoint)
@@ -77,11 +77,14 @@ export interface ChatMessage {
 }
 
 export interface ChatSummary {
-  id: string;
-  title: string;
-  lastMessagePreview: string;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string; // Mapped from _id or conversation_id
+  title: string; // Extracted from content
+  lastMessagePreview: string; // Extracted from content
+  timestamp: string; // From backend conversation structure
+  content: any; // From backend conversation structure
+  conversation_id: string; // From backend conversation structure
+  message_id: string; // From backend conversation structure
+  _id: string; // From backend conversation structure
 }
 
 export interface StreamResponseOptions {
@@ -569,13 +572,34 @@ export const apiService = {
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`/api/chats?limit=${limit}&offset=${offset}`);
+    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/conversations?limit=${limit}&offset=${offset}&token=${API_CONFIG.AUTH_TOKEN}`);
 
     if (!response.ok) {
       throw new Error(`Error fetching chat history: ${response.statusText}`);
     }
 
-    return await response.json();
+    const conversations = await response.json();
+    
+    // Transform the response data to match our expected structure
+    return conversations.map((conversation: any) => {
+      const contentStr = typeof conversation.content === 'string' 
+        ? conversation.content 
+        : JSON.stringify(conversation.content);
+      
+      const title = contentStr.substring(0, 30) + (contentStr.length > 30 ? '...' : '');
+      const lastMessagePreview = contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : '');
+      
+      return {
+        id: conversation._id || conversation.conversation_id,
+        title,
+        lastMessagePreview,
+        timestamp: conversation.timestamp,
+        content: conversation.content,
+        conversation_id: conversation.conversation_id,
+        message_id: conversation.message_id,
+        _id: conversation._id
+      };
+    });
   },
 
   // Get chat by ID with its messages
@@ -597,7 +621,7 @@ export const apiService = {
 
   // Create a new empty chat
   createNewChat: async (): Promise<ChatSummary> => {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/chat?token=${API_CONFIG.AUTH_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -606,7 +630,24 @@ export const apiService = {
       throw new Error(`Error creating chat: ${response.statusText}`);
     }
 
-    return await response.json();
+    // Get the new chat data
+    const newChat = await response.json();
+    
+    // Return the transformed chat data to match our expected structure
+    return {
+      id: newChat._id || newChat.conversation_id,
+      title: typeof newChat.content === 'string' 
+        ? newChat.content.substring(0, 30) + (newChat.content.length > 30 ? '...' : '')
+        : 'New Conversation',
+      lastMessagePreview: typeof newChat.content === 'string'
+        ? newChat.content.substring(0, 50) + (newChat.content.length > 50 ? '...' : '')
+        : '',
+      timestamp: newChat.timestamp,
+      content: newChat.content,
+      conversation_id: newChat.conversation_id,
+      message_id: newChat.message_id,
+      _id: newChat._id
+    };
   },
 };
 
