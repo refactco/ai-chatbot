@@ -40,6 +40,7 @@ import {
 import { ChatItem } from './sidebar-history-item';
 import {
   apiService,
+  API_CONFIG,
   type ChatSummary,
 } from '@/lib/services/api-service';
 
@@ -182,7 +183,7 @@ export function SidebarHistory() {
             prevChats.filter((chat) => chat.id !== deleteId),
           );
           
-          const response = await fetch(`/conversations/${deleteId}`, {
+          const response = await fetch(`${API_CONFIG.BACKEND_URL}/conversations/${deleteId}`, {
             method: 'DELETE',
           });
           

@@ -14,7 +14,7 @@
 import type { Attachment } from '@/lib/api/types';
 
 // Backend API configuration
-const API_CONFIG = {
+export const API_CONFIG = {
   // For direct backend access (server-side only)
   BACKEND_URL: 'http://localhost:3333',
   // For client-side access (uses real API endpoint)
@@ -580,7 +580,7 @@ export const apiService = {
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`/conversations?limit=${limit}&offset=${offset}`);
+    const response = await fetch(`${API_CONFIG.BACKEND_URL}/conversations?limit=${limit}&offset=${offset}`);
 
     if (!response.ok) {
       throw new Error(`Error fetching chat history: ${response.statusText}`);
