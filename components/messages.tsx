@@ -16,7 +16,7 @@
 
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
 import equal from 'fast-deep-equal';
-import { memo, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Greeting } from './greeting';
 import { PreviewMessage, ThinkingMessage } from './message';
 
@@ -50,6 +50,13 @@ function PureMessages({
   // Simple refs without auto-scrolling
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change or when streaming
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [compatibleMessages, status]);
 
   console.log({ compatibleMessages });
 

@@ -7,15 +7,16 @@
  * - Displays appropriate loading states during message streaming
  * - Optimized rendering with memoization to prevent unnecessary rerenders
  * - Handles readonly mode for historical viewing
+ * - Auto-scrolls to latest message when new content arrives
  *
  * Used in the artifact sidebar to show the conversation context
  * that led to the artifact's creation or modification.
  */
 
-import { PreviewMessage } from './message';
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
-import { memo, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import type { UIArtifact } from './artifact';
+import { PreviewMessage } from './message';
 
 interface ArtifactMessagesProps {
   chatId: string;
@@ -38,6 +39,13 @@ function PureArtifactMessages({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom when messages change or streaming occurs
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, status]);
+
   return (
     <div
       ref={messagesContainerRef}
@@ -52,6 +60,7 @@ function PureArtifactMessages({
           setMessages={setMessages}
           reload={reload}
           isReadonly={isReadonly}
+          showAssistantIcon={true}
         />
       ))}
 
