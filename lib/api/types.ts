@@ -23,7 +23,7 @@ import React from 'react';
  */
 export interface Message {
   id: string; // Unique identifier
-  role: 'user' | 'assistant' | 'system'; // Who sent the message
+  role: 'user' | 'assistant' | 'tool'; // Who sent the message
   content: string; // Message text content
   name?: string; // Optional sender name for multi-user contexts
 }
@@ -34,9 +34,26 @@ export interface Message {
  */
 export interface CreateMessage {
   id?: string; // Optional - will be generated if not provided
-  role: 'user' | 'assistant' | 'system'; // Who sent the message
+  role: 'user' | 'assistant' | 'tool'; // Who sent the message
   content: string; // Message text content
   name?: string; // Optional sender name
+}
+
+/**
+ * Human in the loop interaction data
+ * Represents data for user feedback or interaction
+ */
+export interface HumanInTheLoop {
+  message_id?: string; // ID of the message being responded to
+  data?: any; // Any additional interaction data
+}
+
+/**
+ * Tool result data structure
+ * Represents the result of a tool execution
+ */
+export interface ToolResult {
+  data?: any; // Tool execution result data
 }
 
 /**
@@ -46,7 +63,10 @@ export interface CreateMessage {
 export interface UIMessage extends Message {
   attachments?: Attachment[]; // Files or artifacts attached to the message
   createdAt?: Date; // When the message was created
-  reasoning?: string; // Optional AI reasoning explanation
+  // reasoning?: string; // Optional AI reasoning explanation
+  // role?: 'user' | 'assistant' | 'tool'; // Event type for stream events
+  // human_in_the_loop?: HumanInTheLoop; // Human interaction data
+  tool_calls?: ToolResult; // Tool execution results
 }
 
 /**

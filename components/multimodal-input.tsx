@@ -20,32 +20,32 @@
 
 import type {
   Attachment,
+  CreateMessage,
+  Message,
   UIMessage,
   UseChatHelpers,
-  Message,
-  CreateMessage,
 } from '@/lib/api/types';
 import cx from 'classnames';
 import type React from 'react';
 import {
-  useRef,
-  useEffect,
-  useState,
+  memo,
   useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
   type Dispatch,
   type SetStateAction,
-  type ChangeEvent,
-  memo,
 } from 'react';
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
+import equal from 'fast-deep-equal';
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
+import { SuggestedActions } from './suggested-actions';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { SuggestedActions } from './suggested-actions';
-import equal from 'fast-deep-equal';
 
 /**
  * Helper function to read file as data URL
@@ -206,7 +206,9 @@ function PureMultimodalInput({
         type: file.type,
         url: URL.createObjectURL(file),
         name: file.name,
-        content: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        content: file.type.startsWith('image/')
+          ? URL.createObjectURL(file)
+          : undefined,
       } as Attachment;
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -277,7 +279,10 @@ function PureMultimodalInput({
         >
           {attachments.map((attachment) => (
             <PreviewAttachment
-              key={attachment.url || `attachment-${Math.random().toString(36).substring(2, 9)}`}
+              key={
+                attachment.url ||
+                `attachment-${Math.random().toString(36).substring(2, 9)}`
+              }
               attachment={attachment}
             />
           ))}

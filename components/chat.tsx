@@ -10,6 +10,7 @@
  * - File attachment handling
  * - Streaming response processing
  * - Artifact integration
+ * - Support for all event types (user_message, assistant_message)
  *
  * This component acts as the central hub for all chat-related functionality,
  * connecting the UI components with the backend services.
@@ -17,20 +18,20 @@
 
 'use client';
 
-import type { Attachment, UIMessage } from '@/lib/api/types';
-import { useChat } from '@/lib/api/chat';
-import { useState } from 'react';
-import { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
-import { generateUUID } from '@/lib/utils';
-import { Artifact } from './artifact';
-import { MultimodalInput } from './multimodal-input';
-import { Messages } from './messages';
 import { useArtifactSelector } from '@/hooks/use-artifact';
-import { toast } from 'sonner';
-import { unstable_serialize } from 'swr/infinite';
-import { getChatHistoryPaginationKey } from './sidebar-history';
+import { useChat } from '@/lib/api/chat';
+import type { Attachment, UIMessage } from '@/lib/api/types';
 import { apiService } from '@/lib/services/api-service';
+import { generateUUID } from '@/lib/utils';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
+import { unstable_serialize } from 'swr/infinite';
+import { Artifact } from './artifact';
+import { Messages } from './messages';
+import { MultimodalInput } from './multimodal-input';
+import { getChatHistoryPaginationKey } from './sidebar-history';
 
 export function Chat({
   id,
@@ -75,6 +76,8 @@ export function Chat({
     (state: { isVisible: boolean }) => state.isVisible,
   );
 
+  console.log({ messages });
+
   /**
    * Custom submit handler that uses the API service
    * Manages user message submission and AI response streaming
@@ -104,9 +107,6 @@ export function Chat({
       setInput('');
       setAttachments([]);
 
-      // Maintain a mapping of message IDs for tracking updates
-      const messageIds = new Map();
-
       // Stream the AI response
       await apiService.streamResponse(
         userMessage.content,
@@ -119,6 +119,8 @@ export function Chat({
                 const assistantMessageIndex = messages.findIndex(
                   (msg) => msg.role === 'assistant' && msg.content === '',
                 );
+
+                console.log({ assistantMessageIndex, messages });
 
                 if (assistantMessageIndex === -1) {
                   return [
@@ -140,19 +142,70 @@ export function Chat({
                 }
               } else {
                 // ===== Improved Message Handling =====
+
+                // Handle user_message and assistant_message event types
+                if (chunk.role === 'user' || chunk.role === 'assistant') {
+                  console.log({ chunk });
+                  console.log(`Processing ${chunk.role} with ID:`, chunk.id);
+
+                  // Look for existing message with same ID to update
+                  const existingIndex = messages.findIndex(
+                    (msg) => msg.id === chunk.id,
+                  );
+
+                  if (existingIndex !== -1) {
+                    // Update existing message
+                    console.log(
+                      'Updating existing message at index:',
+                      existingIndex,
+                    );
+                    const updatedMessages = [...messages];
+                    updatedMessages[existingIndex] = {
+                      ...updatedMessages[existingIndex],
+                      ...chunk,
+                      // Ensure type is a valid UIMessage type
+                      role: chunk.role as 'user' | 'assistant',
+                      createdAt:
+                        chunk.createdAt ||
+                        updatedMessages[existingIndex].createdAt ||
+                        new Date(),
+                    };
+                    return updatedMessages;
+                  } else {
+                    // Add as new message
+                    console.log(`Adding new ${chunk.role} message`);
+                    return [
+                      ...messages,
+                      {
+                        ...chunk,
+                        // Ensure type is a valid UIMessage type
+                        role: chunk.role as 'user' | 'assistant',
+                        createdAt: chunk.createdAt || new Date(),
+                      } as UIMessage,
+                    ];
+                  }
+                }
+
                 // For streaming responses (ongoing AI response), update existing message
                 if (chunk.id && chunk.id.includes('response-')) {
-                  console.log('Processing streaming response chunk with ID:', chunk.id);
-                  
-                  // Look for existing message or add new one
-                  const existingIndex = messages.findIndex(msg => 
-                    msg.id === chunk.id || 
-                    (msg.id && msg.id.includes('response-'))
+                  console.log(
+                    'Processing streaming response chunk with ID:',
+                    chunk.id,
                   );
-                  
+
+                  // Look for existing message or add new one
+                  const existingIndex = messages.findIndex(
+                    (msg) =>
+                      msg.id === chunk.id ||
+                      (msg.id && msg.id.includes('response-')),
+                  );
+
                   if (existingIndex !== -1) {
                     // Update existing response
-                    console.log('Updating existing response at index:', existingIndex);
+                    console.log(
+                      'Updating existing response at index:',
+                      existingIndex,
+                    );
                     const updatedMessages = [...messages];
                     updatedMessages[existingIndex] = {
                       ...updatedMessages[existingIndex],
@@ -162,13 +215,25 @@ export function Chat({
                   } else {
                     // Add new response message
                     console.log('Adding new streaming response');
-                    return [...messages, { ...chunk, createdAt: chunk.createdAt || new Date() }];
+                    return [
+                      ...messages,
+                      {
+                        ...chunk,
+                        createdAt: chunk.createdAt || new Date(),
+                      } as UIMessage,
+                    ];
                   }
                 }
-                
+
                 // For event messages, always add as new message
                 // This ensures tool events are always displayed
-                return [...messages, { ...chunk, createdAt: chunk.createdAt || new Date() }];
+                return [
+                  ...messages,
+                  {
+                    ...chunk,
+                    createdAt: chunk.createdAt || new Date(),
+                  } as UIMessage,
+                ];
               }
             });
           },

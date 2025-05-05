@@ -14,10 +14,10 @@
  * and testing, allowing the frontend to work without a real backend connection.
  */
 
-import { http, HttpResponse } from 'msw';
-import { generateUUID } from '@/lib/utils';
 import type { Attachment } from '@/lib/api/types';
-import { DOCUMENT_TITLES, SAMPLE_TEXT, SAMPLE_SHEET } from './data';
+import { generateUUID } from '@/lib/utils';
+import { http, HttpResponse } from 'msw';
+import { DOCUMENT_TITLES, SAMPLE_SHEET, SAMPLE_TEXT } from './data';
 
 /**
  * Interface for chat message request payload
@@ -118,8 +118,11 @@ export const handlers = [
   /**
    * Handler for streaming AI responses
    * Simulates a streaming response with a simple message
+   * NOTE: Disabled to allow real API calls to go through
    */
+  /*
   http.post('/api/chat/stream', async ({ request }) => {
+    console.log({ request });
     // Always return a single, generic assistant message
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -169,6 +172,7 @@ export const handlers = [
       },
     });
   }),
+  */
 
   /**
    * Handler for fetching chat history

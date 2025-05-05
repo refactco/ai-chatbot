@@ -16,8 +16,8 @@
  * calls once the backend is ready.
  */
 
-import { generateUUID } from '@/lib/utils';
 import type { Attachment } from '@/lib/api/types';
+import { generateUUID } from '@/lib/utils';
 
 /**
  * Represents a chat message in the system

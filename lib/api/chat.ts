@@ -1,14 +1,14 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { apiService } from '@/lib/services/api-service';
 import { generateUUID } from '@/lib/utils';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   ChatRequestOptions,
+  CreateMessage,
+  Message,
   UIMessage,
   UseChatHelpers,
   UseChatOptions,
-  Message,
-  CreateMessage,
 } from './types';
-import { apiService } from '@/lib/services/api-service';
 
 /**
  * Hook for managing chat interactions
@@ -141,22 +141,12 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
           {
             onChunk: (chunkOrMessage) => {
               if (typeof chunkOrMessage !== 'string') {
-                setMessages((messages) => [
-                  ...messages.filter(
-                    (m) => m.role !== 'assistant' || m.id !== 'loading',
-                  ),
-                  chunkOrMessage,
-                ]);
+                setMessages((messages) => [...messages, chunkOrMessage]);
               }
             },
             onFinish: (message) => {
               // Finalize the assistant message
-              setMessages((messages) => [
-                ...messages.filter(
-                  (m) => m.role !== 'assistant' || m.id !== 'loading',
-                ),
-                message,
-              ]);
+              setMessages((messages) => [...messages, message]);
               setStatus('ready');
               setIsLoading(false);
 

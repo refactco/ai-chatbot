@@ -1,106 +1,85 @@
 /**
- * Chat Stream Proxy API Route
- * 
- * This file implements a proxy to the backend chat API,
- * handling CORS issues and forwarding requests to the actual backend.
+ * Chat Stream API Route
+ *
+ * This file now acts as a proxy for the real chat API stream endpoint.
+ * It forwards requests to the external API and streams the response back.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-// Backend API configuration - same as in api-service.ts
-const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
-  ENDPOINTS: {
-    CHAT_STREAM: '/chat/stream',
-  }
-};
+// Real API configuration
+const REAL_API_BASE_URL = 'http://localhost:3333';
+const REAL_API_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMGZhMDk1LWQyNjctNGFlYy05NjMxLTJiMzRhODVjNzM2MyIsImVtYWlsIjoiZGV2QHJlZmFjdC5jbyIsImV4cCI6NDg5OTU5OTk4MywiaWF0IjoxNzQ1OTk5OTgzfQ.0pDb3MuRpaO-9N8C92ugzDmsq5pnMxL78c1Wz77hpJ4';
 
 /**
- * This function handles GET requests to /api/chat/stream
- * It forwards the requests to the actual backend API and streams the response back
+ * GET handler for the chat stream API
+ * Proxies requests to the real API and forwards the response
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get the message query parameter
+    // Extract the message from the query parameters
     const { searchParams } = new URL(request.url);
     const message = searchParams.get('message');
-    
+
     if (!message) {
-      return NextResponse.json({ error: 'Message parameter is required' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Message is required' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
-    
-    // Build the URL for the backend API - ensure we're using the correct path
-    const backendUrl = `${API_CONFIG.BASE_URL}/api${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodeURIComponent(message)}`;
-    
-    console.log('Proxying request to:', backendUrl);
-    
-    // Forward the request to the backend
-    const response = await fetch(backendUrl, {
+
+    // Construct the real API URL
+    const apiUrl = `${REAL_API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${REAL_API_TOKEN}`;
+
+    console.log('Proxying request to real API:', apiUrl);
+
+    // Forward the request to the real API
+    const apiResponse = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Accept: 'text/event-stream',
       },
     });
-    
-    // Check if the response is OK
-    if (!response.ok) {
-      console.error('Error from backend:', response.statusText);
-      return NextResponse.json(
-        { error: `Error from backend: ${response.statusText}` }, 
-        { status: response.status }
+
+    // Check if the response is successful
+    if (!apiResponse.ok) {
+      console.error('API error:', apiResponse.status, apiResponse.statusText);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to get response from API',
+          status: apiResponse.status,
+          statusText: apiResponse.statusText,
+        }),
+        {
+          status: apiResponse.status,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
       );
     }
-    
-    // Create a new ReadableStream that forwards the response from the backend
-    const reader = response.body?.getReader();
-    const encoder = new TextEncoder();
-    
-    if (!reader) {
-      return NextResponse.json({ error: 'Failed to read response stream' }, { status: 500 });
-    }
-    
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) {
-              console.log('Stream completed');
-              controller.close();
-              break;
-            }
-            
-            // Log the data being forwarded (for debugging)
-            const textChunk = new TextDecoder().decode(value);
-            console.log('Raw chunk received:', textChunk);
-            
-            // Forward the chunk to the client without parsing
-            controller.enqueue(value);
-          }
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
-        }
-      }
-    });
-    
-    // Return the response with the appropriate headers
-    return new Response(stream, {
+
+    // Return the streaming response with appropriate headers
+    return new Response(apiResponse.body, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
       },
     });
-    
   } catch (error) {
-    console.error('Proxy error:', error);
-    return NextResponse.json(
-      { error: 'Failed to proxy request to backend' }, 
-      { status: 500 }
+    console.error('Stream API error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to stream chat response' }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
     );
   }
-} 
+}

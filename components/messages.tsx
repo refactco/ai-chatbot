@@ -15,10 +15,10 @@
  */
 
 import type { UIMessage, UseChatHelpers } from '@/lib/api/types';
-import { PreviewMessage, ThinkingMessage } from './message';
-import { Greeting } from './greeting';
-import { memo, useRef } from 'react';
 import equal from 'fast-deep-equal';
+import { memo, useRef } from 'react';
+import { Greeting } from './greeting';
+import { PreviewMessage, ThinkingMessage } from './message';
 
 interface MessagesProps {
   chatId: string;
@@ -51,6 +51,8 @@ function PureMessages({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  console.log({ compatibleMessages });
+
   return (
     <div
       ref={messagesContainerRef}
@@ -78,6 +80,10 @@ function PureMessages({
             setMessages={compatibleSetMessages}
             reload={compatibleReload}
             isReadonly={isReadonly}
+            showAssistantIcon={
+              compatibleMessages[index - 1]?.role !== 'assistant' &&
+              compatibleMessages[index - 1]?.role !== 'tool'
+            }
           />
         );
       })}

@@ -16,12 +16,15 @@ import type { Attachment } from '@/lib/api/types';
 // Backend API configuration
 const API_CONFIG = {
   // For direct backend access (server-side only)
-  BACKEND_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://159.223.110.52:3333',
-  // For client-side access (uses Next.js API route proxy)
-  BASE_URL: '/api',
+  BACKEND_URL: 'http://localhost:3333',
+  // For client-side access (uses real API endpoint)
+  BASE_URL: 'http://localhost:3333/api',
   ENDPOINTS: {
     CHAT_STREAM: '/chat/stream',
-  }
+  },
+  // Real API token
+  AUTH_TOKEN:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVlMGZhMDk1LWQyNjctNGFlYy05NjMxLTJiMzRhODVjNzM2MyIsImVtYWlsIjoiZGV2QHJlZmFjdC5jbyIsImV4cCI6NDg5OTU5OTk4MywiaWF0IjoxNzQ1OTk5OTgzfQ.0pDb3MuRpaO-9N8C92ugzDmsq5pnMxL78c1Wz77hpJ4',
 };
 
 // Type definitions for User, Chat, Message, and API responses
@@ -66,11 +69,11 @@ export interface ChatCompletionResponse {
 export interface ChatMessage {
   id: string;
   content: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'tool';
   createdAt: Date;
   attachments?: Attachment[];
-  reasoning?: string;
-  type?: string;
+  // reasoning?: string;
+  // type?: string;
 }
 
 export interface ChatSummary {
@@ -409,11 +412,13 @@ export const apiService = {
         createdAt: new Date(),
         attachments: attachments.length > 0 ? attachments : undefined,
       };
-      
+
       return userMessage;
     } catch (error) {
       console.error('Error sending message:', error);
-      throw new Error(`Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   },
 
@@ -429,78 +434,107 @@ export const apiService = {
     try {
       // Encode the message for the query parameter
       const encodedMessage = encodeURIComponent(message);
-      
-      console.log('Starting chat stream request:', encodedMessage.substring(0, 30) + '...');
-      
-      // Connect to the backend API endpoint for streaming
-      const eventSource = new EventSource(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}`, {
-        withCredentials: false // Add this to handle CORS
-      });
-      
+
+      console.log(
+        'Starting chat stream request:',
+        encodedMessage.substring(0, 30) + '...',
+      );
+
+      // Connect to the backend API endpoint for streaming with token
+      const eventSource = new EventSource(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}&token=${API_CONFIG.AUTH_TOKEN}`,
+        {
+          withCredentials: false, // Add this to handle CORS
+        },
+      );
+
       // Track seen event types for debugging
       const seenEventTypes = new Set<string>();
-      
+
       // Generate a unique session ID for this conversation
       const sessionId = `session-${Date.now()}`;
-      
+
       // Create a stable ID for the final streaming response
       const finalResponseId = `response-${sessionId}`;
-      
+
       // Store all streaming chunks
       let responseContent = '';
-      
+
       // Process events from the stream
-      eventSource.addEventListener('delta', (event) => {
+      eventSource.addEventListener('message', (event) => {
         try {
           // Parse the event data
           const parsedData = JSON.parse(event.data);
-          const eventType = parsedData.type;
-          
+
+          // Log for debugging real API responses
+          console.log('Real API event data:', {
+            event: event,
+            parsedData: parsedData,
+            role: parsedData.role,
+            content: parsedData.content,
+            toolCalls: parsedData.tool_calls,
+          });
+
+          const eventType = parsedData.role;
+
           // Track event types seen
           seenEventTypes.add(eventType);
-          
+
+          if (eventType === 'user' && !parsedData.content) {
+            return;
+          }
+
           // Skip user message events (redundant with UI)
-          if (eventType === 'user_message') {
-            return;
-          }
-          
+          // if (eventType === 'user') {
+          //   const eventMessage = {
+          //     id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
+          //     role: 'user' as const,
+          //     content: formatEventContent(parsedData),
+          //     createdAt: new Date(),
+          //   };
+
+          //   onChunk(eventMessage);
+          //   return;
+          // }
+
           // Handle streaming response chunks
-          if (eventType === 'llm_streaming_response') {
-            // Accumulate content
-            responseContent += parsedData.content || '';
-            
-            // Create or update the streaming message
-            const streamingMessage = {
-              id: finalResponseId,
-              role: 'assistant' as const,
-              content: responseContent,
-              createdAt: new Date(),
-            };
-            
-            // Send to UI
-            onChunk(streamingMessage);
-            return;
-          }
-          
+          // if (eventType === 'llm_streaming_response') {
+          //   // Accumulate content
+          //   responseContent += parsedData.content || '';
+
+          //   // Create or update the streaming message
+          //   const streamingMessage = {
+          //     id: finalResponseId,
+          //     role: 'assistant' as const,
+          //     content: responseContent,
+          //     createdAt: new Date(),
+          //   };
+
+          //   // Send to UI
+          //   onChunk(streamingMessage);
+          //   return;
+          // }
+
           // Create a message for all other event types
           const eventMessage = {
             id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
-            role: 'assistant' as const,
+            role: parsedData.role,
             content: formatEventContent(parsedData),
+            tool_calls: parsedData.tool_calls,
             createdAt: new Date(),
           };
-          
+
           onChunk(eventMessage);
         } catch (error) {
           console.error('Error processing event:', error);
         }
       });
-      
+
       // Handle stream completion
       eventSource.addEventListener('end', () => {
         console.log('Stream completed. Event types seen:', [...seenEventTypes]);
         eventSource.close();
-        
+
         // Ensure we have a complete final response
         if (responseContent) {
           const finalMessage = {
@@ -520,14 +554,13 @@ export const apiService = {
           });
         }
       });
-      
+
       // Handle errors
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
         eventSource.close();
         onError(new Error('Connection to the AI service failed.'));
       };
-      
     } catch (error) {
       console.error('Error in stream setup:', error);
       onError(error instanceof Error ? error : new Error('Unknown error'));
@@ -579,48 +612,59 @@ export const apiService = {
 
 // Helper function to format events for display
 function formatEventContent(event: any): string {
-  const { type, content, data } = event;
-  
-  // Handle text content events
-  if (content && typeof content === 'string') {
-    return content;
+  // If there's direct content, use it
+  if (event.content && typeof event.content === 'string') {
+    return event.content;
   }
-  
-  // Format data objects for different event types
-  if (data) {
-    switch (type) {
-      case 'selected_tool':
-        return `📌 Selected tools: ${data.names?.join(', ') || 'None'}`;
-        
-      case 'tool_called':
-        return `🔧 Tool called: ${data.name || 'Unknown'}\nParameters: ${formatJsonData(data.parameters || {})}`;
-        
-      case 'tool_result':
-        return data.success
-          ? `✅ Tool result:\n${formatJsonData(data.result)}`
-          : `❌ Error: ${data.result || 'Unknown error'}`;
-          
-      default:
-        return `${type}:\n${formatJsonData(data)}`;
+
+  // For tool calls, format them appropriately
+  if (event.tool_calls) {
+    if (event.tool_calls.type === 'request' && event.tool_calls.title) {
+      return event.tool_calls.title;
+    } else if (
+      event.tool_calls.items &&
+      Array.isArray(event.tool_calls.items)
+    ) {
+      const itemsList = event.tool_calls.items
+        .map((item: any) => `- ${item.name || 'Unnamed item'}`)
+        .join('\n');
+      return `${event.tool_calls.title || 'Tool Request'}:\n${itemsList}`;
     }
   }
-  
-  // Fallback for any other format
-  return `${type}: ${JSON.stringify(event, null, 2)}`;
+
+  // Format based on event type/role
+  switch (event.role) {
+    case 'system_prompt':
+      return `System: ${event.content || 'System message'}`;
+    case 'thinking':
+      return `Thinking: ${event.content || 'Processing...'}`;
+    case 'selected_tool':
+      return `Selected tool: ${event.content || 'Unknown tool'}`;
+    case 'tool_called':
+      return `Tool called: ${event.content || 'Unknown tool'}`;
+    case 'tool_result':
+      return `Tool result: ${event.content || 'No result'}`;
+    case 'llm_streaming_response':
+      return event.content || '';
+    default:
+      // For any other type, just return the content if available
+      return event.content || `Event: ${event.role || 'unknown'}`;
+  }
 }
 
 // Helper to format JSON data with truncation
 function formatJsonData(data: any): string {
   if (!data) return '';
-  
+
   try {
-    const jsonStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    const jsonStr =
+      typeof data === 'string' ? data : JSON.stringify(data, null, 2);
     const lines = jsonStr.split('\n');
-    
+
     if (lines.length > 8) {
       return `\`\`\`json\n${lines.slice(0, 8).join('\n')}\n... (${lines.length - 8} more lines)\n\`\`\``;
     }
-    
+
     return `\`\`\`json\n${jsonStr}\n\`\`\``;
   } catch (e) {
     return String(data);
