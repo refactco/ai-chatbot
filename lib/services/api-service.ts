@@ -461,7 +461,7 @@ export const apiService = {
       let responseContent = '';
 
       // Process events from the stream
-      eventSource.addEventListener('delta', (event) => {
+      eventSource.addEventListener('message', (event) => {
         try {
           // Parse the event data
           const parsedData = JSON.parse(event.data);
@@ -485,40 +485,40 @@ export const apiService = {
           }
 
           // Skip user message events (redundant with UI)
-          if (eventType === 'user') {
-            const eventMessage = {
-              id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
-              role: 'user' as const,
-              content: formatEventContent(parsedData),
-              createdAt: new Date(),
-            };
+          // if (eventType === 'user') {
+          //   const eventMessage = {
+          //     id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
+          //     role: 'user' as const,
+          //     content: formatEventContent(parsedData),
+          //     createdAt: new Date(),
+          //   };
 
-            onChunk(eventMessage);
-            return;
-          }
+          //   onChunk(eventMessage);
+          //   return;
+          // }
 
           // Handle streaming response chunks
-          if (eventType === 'llm_streaming_response') {
-            // Accumulate content
-            responseContent += parsedData.content || '';
+          // if (eventType === 'llm_streaming_response') {
+          //   // Accumulate content
+          //   responseContent += parsedData.content || '';
 
-            // Create or update the streaming message
-            const streamingMessage = {
-              id: finalResponseId,
-              role: 'assistant' as const,
-              content: responseContent,
-              createdAt: new Date(),
-            };
+          //   // Create or update the streaming message
+          //   const streamingMessage = {
+          //     id: finalResponseId,
+          //     role: 'assistant' as const,
+          //     content: responseContent,
+          //     createdAt: new Date(),
+          //   };
 
-            // Send to UI
-            onChunk(streamingMessage);
-            return;
-          }
+          //   // Send to UI
+          //   onChunk(streamingMessage);
+          //   return;
+          // }
 
           // Create a message for all other event types
           const eventMessage = {
             id: `${eventType}-${sessionId}-${Math.random().toString(36).substring(2, 9)}`,
-            role: 'assistant' as const,
+            role: parsedData.role,
             content: formatEventContent(parsedData),
             tool_calls: parsedData.tool_calls,
             createdAt: new Date(),

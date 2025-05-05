@@ -87,13 +87,10 @@ const PurePreviewMessage = ({
         data-role={messageRole}
       >
         <div
-          className={cn(
-            'flex gap-4 w-full group-data-[role=user]/message:max-w-2xl',
-            {
-              'w-full': mode === 'edit',
-              'group-data-[role=user]/message:w-fit': mode !== 'edit',
-            },
-          )}
+          className={cn('flex gap-4 w-full max-w-2xl', {
+            'w-full': mode === 'edit',
+            'group-data-[role=user]/message:w-fit': mode !== 'edit',
+          })}
         >
           {/* System message avatar */}
           {/* {messageRole === 'tool' && (
@@ -157,7 +154,7 @@ const PurePreviewMessage = ({
             )}
 
             {/* Handle system message content - AI reasoning */}
-            {isToolMessageEvent && message.content && (
+            {/* {isToolMessageEvent && message.content && (
               <div className="flex flex-col gap-2">
                 <div
                   data-testid="reasoning-content"
@@ -169,7 +166,7 @@ const PurePreviewMessage = ({
                   <Markdown>{message.content}</Markdown>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Handle assistant message content */}
             {isAssistantMessageEvent && message.content && (
@@ -190,7 +187,7 @@ const PurePreviewMessage = ({
               </div>
             )}
 
-            {isAssistantMessageEvent && message.tool_calls ? (
+            {isToolMessageEvent && message.tool_calls ? (
               <ToolResult
                 toolCalls={message.tool_calls}
                 // onAccept={() => {

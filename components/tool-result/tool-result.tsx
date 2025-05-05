@@ -53,92 +53,92 @@ const ToolResult: React.FC<ToolResultProps> = (props) => {
   }, [items]);
 
   // Handler for accepting a task
-  const handleAccept = (toolObject: IToolObject) => {
-    console.log({ toolObject, toolResultData });
-    // Update internal state
-    if (Array.isArray(toolResultData)) {
-      const ss = toolResultData.map((task: any) =>
-        task.uid === toolObject.uid ? { ...task, status: 'Accepted' } : task,
-      );
+  // const handleAccept = (toolObject: IToolObject) => {
+  //   console.log({ toolObject, toolResultData });
+  //   // Update internal state
+  //   if (Array.isArray(toolResultData)) {
+  //     const ss = toolResultData.map((task: any) =>
+  //       task.uid === toolObject.uid ? { ...task, status: 'Accepted' } : task,
+  //     );
 
-      setToolResultData(ss);
-    } else if (toolResultData?.tasks) {
-      console.log({ tasks: toolResultData.tasks });
-      const updatedTasks = toolResultData.tasks.map((task: any) =>
-        task.uid === toolObject.uid ? { ...task, status: 'Accepted' } : task,
-      );
-      setToolResultData({ ...toolResultData, tasks: updatedTasks });
-    }
+  //     setToolResultData(ss);
+  //   } else if (toolResultData?.tasks) {
+  //     console.log({ tasks: toolResultData.tasks });
+  //     const updatedTasks = toolResultData.tasks.map((task: any) =>
+  //       task.uid === toolObject.uid ? { ...task, status: 'Accepted' } : task,
+  //     );
+  //     setToolResultData({ ...toolResultData, tasks: updatedTasks });
+  //   }
 
-    // Call parent handler if provided
-    if (parentOnAccept) {
-      parentOnAccept(toolObject);
-    }
-  };
+  //   // Call parent handler if provided
+  //   if (parentOnAccept) {
+  //     parentOnAccept(toolObject);
+  //   }
+  // };
 
-  // Handler for rejecting a task
-  const handleReject = (toolObject: IToolObject) => {
-    // Update internal state
-    if (Array.isArray(toolResultData)) {
-      setToolResultData(
-        toolResultData.map((task: any) =>
-          task.uid === toolObject.uid ? { ...task, status: 'Rejected' } : task,
-        ),
-      );
-    } else if (toolResultData?.tasks) {
-      const updatedTasks = toolResultData.tasks.map((task: any) =>
-        task.uid === toolObject.uid ? { ...task, status: 'Rejected' } : task,
-      );
-      setToolResultData({ ...toolResultData, tasks: updatedTasks });
-    }
+  // // Handler for rejecting a task
+  // const handleReject = (toolObject: IToolObject) => {
+  //   // Update internal state
+  //   if (Array.isArray(toolResultData)) {
+  //     setToolResultData(
+  //       toolResultData.map((task: any) =>
+  //         task.uid === toolObject.uid ? { ...task, status: 'Rejected' } : task,
+  //       ),
+  //     );
+  //   } else if (toolResultData?.tasks) {
+  //     const updatedTasks = toolResultData.tasks.map((task: any) =>
+  //       task.uid === toolObject.uid ? { ...task, status: 'Rejected' } : task,
+  //     );
+  //     setToolResultData({ ...toolResultData, tasks: updatedTasks });
+  //   }
 
-    // Call parent handler if provided
-    if (parentOnReject) {
-      parentOnReject(toolObject);
-    }
-  };
+  //   // Call parent handler if provided
+  //   if (parentOnReject) {
+  //     parentOnReject(toolObject);
+  //   }
+  // };
 
-  // Handler for accepting all tasks
-  const handleAcceptAll = () => {
-    // Update internal state
-    if (Array.isArray(toolResultData)) {
-      setToolResultData(
-        toolResultData.map((task: any) => ({ ...task, status: 'Accepted' })),
-      );
-    } else if (toolResultData?.tasks) {
-      const updatedTasks = toolResultData.tasks.map((task: any) => ({
-        ...task,
-        status: 'Accepted',
-      }));
-      setToolResultData({ ...toolResultData, tasks: updatedTasks });
-    }
+  // // Handler for accepting all tasks
+  // const handleAcceptAll = () => {
+  //   // Update internal state
+  //   if (Array.isArray(toolResultData)) {
+  //     setToolResultData(
+  //       toolResultData.map((task: any) => ({ ...task, status: 'Accepted' })),
+  //     );
+  //   } else if (toolResultData?.tasks) {
+  //     const updatedTasks = toolResultData.tasks.map((task: any) => ({
+  //       ...task,
+  //       status: 'Accepted',
+  //     }));
+  //     setToolResultData({ ...toolResultData, tasks: updatedTasks });
+  //   }
 
-    // Call parent handler if provided
-    if (parentOnAcceptAll) {
-      parentOnAcceptAll();
-    }
-  };
+  //   // Call parent handler if provided
+  //   if (parentOnAcceptAll) {
+  //     parentOnAcceptAll();
+  //   }
+  // };
 
-  // Handler for rejecting all tasks
-  const handleRejectAll = () => {
-    // Update internal state
-    if (Array.isArray(toolResultData)) {
-      setToolResultData(
-        toolResultData.map((task: any) => ({ ...task, status: 'Rejected' })),
-      );
-    } else if (toolResultData?.tasks) {
-      const updatedTasks = toolResultData.tasks.map((task: any) => ({
-        ...task,
-        status: 'Rejected',
-      }));
-      setToolResultData({ ...toolResultData, tasks: updatedTasks });
-    }
+  // // Handler for rejecting all tasks
+  // const handleRejectAll = () => {
+  //   // Update internal state
+  //   if (Array.isArray(toolResultData)) {
+  //     setToolResultData(
+  //       toolResultData.map((task: any) => ({ ...task, status: 'Rejected' })),
+  //     );
+  //   } else if (toolResultData?.tasks) {
+  //     const updatedTasks = toolResultData.tasks.map((task: any) => ({
+  //       ...task,
+  //       status: 'Rejected',
+  //     }));
+  //     setToolResultData({ ...toolResultData, tasks: updatedTasks });
+  //   }
 
-    // Call parent handler if provided
-    if (parentOnRejectAll) {
-      parentOnRejectAll();
-    }
-  };
+  //   // Call parent handler if provided
+  //   if (parentOnRejectAll) {
+  //     parentOnRejectAll();
+  //   }
+  // };
 
   if (type === 'request') {
     // Handle both formats: data as array or as object with tasks property
@@ -148,7 +148,7 @@ const ToolResult: React.FC<ToolResultProps> = (props) => {
 
     return (
       <ToolResultLayout
-        title={title}
+        title={title + 'tool call request title'}
         showAction={tasks.length > 0}
         // mainIcon={<AsanaLogo />}
         // action={
@@ -177,8 +177,8 @@ const ToolResult: React.FC<ToolResultProps> = (props) => {
             key={task.id || index}
             text={task.name}
             toolObject={task}
-            onReject={handleReject}
-            onAccept={handleAccept}
+            // onReject={handleReject}
+            // onAccept={handleAccept}
           />
         ))}
       </ToolResultLayout>
@@ -241,11 +241,9 @@ const ToolResult: React.FC<ToolResultProps> = (props) => {
   }
 
   if (type === 'result') {
-    const users = Array.isArray(toolResultData) ? toolResultData : [];
-
     return (
       <ToolResultLayout title={title} mainIcon={<AsanaLogo />}>
-        {users.map((user: any, index: number) => (
+        {toolResultData.map((user: any, index: number) => (
           <TaskItem key={index} text={user.name} toolObject={user} readonly />
         ))}
       </ToolResultLayout>

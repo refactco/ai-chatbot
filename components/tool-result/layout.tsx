@@ -9,6 +9,7 @@ export interface IToolResultLayoutProps {
   action?: React.ReactNode;
   showAction?: boolean;
   mainIcon?: React.ReactNode;
+  maxItems?: number;
 }
 
 const ToolResultLayout = ({
@@ -17,12 +18,14 @@ const ToolResultLayout = ({
   action,
   showAction,
   mainIcon = <AsanaLogo />,
+  maxItems = 5,
 }: IToolResultLayoutProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number | undefined>(
     undefined,
   );
+  const itemHeight = 25; // Approximate height of each item in pixels
 
   useEffect(() => {
     if (contentRef.current) {
@@ -71,7 +74,14 @@ const ToolResultLayout = ({
           padding: isCollapsed ? '0px' : undefined,
         }}
       >
-        <div className="p-4 flex flex-col gap-2">{children}</div>
+        <div
+          className="p-4 flex flex-col gap-2 overflow-y-auto"
+          style={{
+            maxHeight: `${maxItems * itemHeight + 32}px`,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

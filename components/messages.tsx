@@ -81,7 +81,8 @@ function PureMessages({
             reload={compatibleReload}
             isReadonly={isReadonly}
             showAssistantIcon={
-              compatibleMessages[index - 1]?.role !== 'assistant'
+              compatibleMessages[index - 1]?.role !== 'assistant' &&
+              compatibleMessages[index - 1]?.role !== 'tool'
             }
           />
         );
