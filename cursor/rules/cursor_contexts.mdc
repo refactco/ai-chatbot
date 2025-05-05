@@ -12,14 +12,17 @@ This document provides guidelines for effectively providing context to Cursor AI
 When asking Cursor AI for help, include these contexts for optimal results:
 
 1. **Documentation References**
+
    - Always include relevant documentation files as context
    - For general questions, include `docs/PROJECT-OVERVIEW.md`
    - For component-specific questions, include `docs/COMPONENT-ARCHITECTURE.md`
-   - For in-depth technical details, include `docs/COMPREHENSIVE-GUIDE.md`
+   - For development workflows, include `docs/DEVELOPER-GUIDE.md`
    - For artifact system, include `docs/ARTIFACT-SYSTEM.md`
    - For version control features, include `docs/VERSION-CONTROL-SYSTEM.md`
+   - For API implementation, include `docs/MOCK-API-INTEGRATION.md` or `docs/REAL-API-INTEGRATION.md`
 
 2. **Related Code Files**
+
    - Include the primary file you're working with
    - Include directly related component files
    - Include relevant utility or service files
@@ -35,6 +38,7 @@ When asking Cursor AI for help, include these contexts for optimal results:
 When creating new files or modifying existing ones, remember to include these documentation elements:
 
 1. **File Description Comment Block**:
+
    ```tsx
    /**
     * Component/File Name
@@ -50,16 +54,17 @@ When creating new files or modifying existing ones, remember to include these do
    ```
 
 2. **Inline Documentation**:
+
    - Add explanatory comments for complex code sections
    - Use JSDoc for functions: `/** @param name - description */`
    - Comment major variables with their purpose
 
 3. **Component Section Comments**:
    ```tsx
-   {/* Section name or purpose */}
-   <div className="...">
-     ...
-   </div>
+   {
+     /* Section name or purpose */
+   }
+   <div className="...">...</div>;
    ```
 
 When requesting help with file creation or editing, mention that these documentation requirements must be included in the implementation.
@@ -76,7 +81,8 @@ I need help implementing [feature description].
 Contexts:
 - docs/PROJECT-OVERVIEW.md (for project understanding)
 - docs/COMPONENT-ARCHITECTURE.md (for component relationships)
-- [relevant specific guide] (API-INTEGRATION.md, ARTIFACT-SYSTEM.md, etc.)
+- docs/DEVELOPER-GUIDE.md (for development patterns)
+- [relevant specific guide] (ARTIFACT-SYSTEM.md, VERSION-CONTROL-SYSTEM.md, etc.)
 - [primary component file you're modifying]
 - [related component files]
 - lib/ai/types.ts (for type definitions)
@@ -92,8 +98,9 @@ I'm encountering a bug where [bug description].
 Contexts:
 - [file with the bug]
 - [related component files]
+- hooks/use-artifact.ts (if artifact-related)
 - lib/ai/types.ts (if message-related)
-- docs/COMPREHENSIVE-GUIDE.md (for technical details)
+- docs/DEVELOPER-GUIDE.md (for implementation patterns)
 - [any error logs or specific behavior observed]
 ```
 
@@ -106,8 +113,9 @@ Contexts:
 - [main component file]
 - [parent component files]
 - [child component files]
+- [related hook files]
 - docs/COMPONENT-ARCHITECTURE.md
-- docs/COMPREHENSIVE-GUIDE.md (relevant sections)
+- [relevant specific guide] (ARTIFACT-SYSTEM.md, VERSION-CONTROL-SYSTEM.md, etc.)
 ```
 
 ## Component-Specific Contexts
@@ -119,6 +127,7 @@ For specific areas of the application, include these contexts:
 ```
 - components/message.tsx
 - components/messages.tsx
+- components/data-stream-handler.tsx (if working with streaming)
 - lib/ai/types.ts
 - docs/COMPONENT-ARCHITECTURE.md (Message Components section)
 ```
@@ -128,6 +137,7 @@ For specific areas of the application, include these contexts:
 ```
 - components/chat.tsx
 - components/multimodal-input.tsx
+- components/data-stream-handler.tsx
 - lib/ai/react.ts
 - docs/COMPONENT-ARCHITECTURE.md (Chat Component section)
 ```
@@ -135,11 +145,11 @@ For specific areas of the application, include these contexts:
 ### API Integration
 
 ```
-- lib/services/mock-api-service.ts 
+- lib/services/mock-api-service.ts
 - lib/services/api-service.ts
 - lib/ai/providers.ts
-- docs/API-INTEGRATION.md
-- docs/MOCK-SERVICES.md
+- docs/MOCK-API-INTEGRATION.md
+- docs/REAL-API-INTEGRATION.md
 ```
 
 ### Artifact System
@@ -161,6 +171,7 @@ For specific areas of the application, include these contexts:
 - components/artifact.tsx
 - components/version-footer.tsx
 - components/artifact-actions.tsx
+- hooks/use-artifact.ts
 - lib/schema.ts
 - docs/VERSION-CONTROL-SYSTEM.md
 ```
@@ -171,23 +182,46 @@ For specific areas of the application, include these contexts:
 - components/artifact.tsx (handleContentChange and related functions)
 - lib/services/api-service.ts
 - lib/schema.ts
+- hooks/use-artifact.ts
 - docs/ARTIFACT-SYSTEM.md (Storage Systems section)
+```
+
+### Custom Hooks
+
+```
+- hooks/use-artifact.ts
+- hooks/use-chat-visibility.ts
+- hooks/use-mobile.tsx
+- components that use the hooks
+- docs/COMPONENT-ARCHITECTURE.md (Custom Hooks section)
+```
+
+### SWR Implementation
+
+```
+- components/artifact.tsx (SWR usage examples)
+- hooks/use-artifact.ts (SWR for state management)
+- docs/DEVELOPER-GUIDE.md (Using SWR for Data Fetching section)
 ```
 
 ## Best Practices for Providing Context
 
 1. **Be Specific and Concise**
+
    - Provide only relevant context files
    - Highlight specific areas you need help with
    - Describe your understanding of the current code
 
 2. **Include Implementation Details**
-   - Mention current state management approach
+
+   - Mention current state management approach (SWR, hooks, etc.)
    - Note any specific TypeScript types in use
    - Reference similar implementations if they exist
    - Specify which storage backend is relevant (API or localStorage)
+   - Include custom hook usage if applicable
 
 3. **Specify Constraints**
+
    - Mention dependencies that cannot be changed
    - Note performance requirements
    - Highlight backward compatibility needs
@@ -204,31 +238,122 @@ For specific areas of the application, include these contexts:
 When implementing or debugging artifact-related features:
 
 1. **Storage Context**
+
    - Specify which storage backend is being used (API or localStorage)
    - Include the document ID format and any special prefixes
    - Note local storage keys for document version inspection
+   - Include SWR caching considerations
 
 2. **Version Control Context**
+
    - Provide version navigation requirements
    - Specify how version restoration should work
    - Include information about edit/diff mode requirements
    - Note timestamp-based ordering considerations
+   - Describe debouncing implementation for content saving
 
 3. **UI Requirements**
+
    - Clarify mobile vs. desktop layout needs
    - Specify animation and transition details
    - Include responsive design considerations
+   - Note any Framer Motion animations
 
-## When To Update Comprehensive Guide
+4. **State Management**
+   - Explain how the useArtifact hook is used
+   - Note any SWR integration points
+   - Describe selector pattern for optimized rerenders
+   - Explain metadata handling if relevant
 
-After making significant changes or learning new details about the project, update `docs/COMPREHENSIVE-GUIDE.md` with:
+## When Implementing New Features
 
-1. Implementation details discovered
-2. New architectural patterns established
-3. Performance optimizations implemented
-4. Edge cases and their handling
-5. API integration specifics
-6. Storage implementation details
-7. Version control edge cases and solutions
+When adding new features to the codebase:
 
-This ensures that the guide remains a living document that accurately reflects the current state and understanding of the project.
+1. **Custom Hooks**
+
+   - Follow the pattern in existing hooks
+   - Use SWR for global state when appropriate
+   - Implement selector pattern for performance
+   - Document the hook with clear JSDoc comments
+
+2. **New Artifact Types**
+
+   - Register in `artifactDefinitions` array
+   - Implement standard interface with initialize and content functions
+   - Handle metadata appropriately
+   - Test with both storage backends
+   - Support version control integration
+
+3. **UI Components**
+
+   - Follow responsive design patterns
+   - Use Framer Motion for animations
+   - Implement mobile-friendly interactions
+   - Memoize with React.memo for performance
+   - Use component section comments
+
+4. **API Integration**
+   - Maintain compatibility with both mock and real APIs
+   - Use SWR for data fetching and caching
+   - Handle streaming responses appropriately
+   - Provide proper loading and error states
+
+## Reference Implementations
+
+When seeking guidance on implementation, refer to these examples:
+
+1. **SWR Usage**: See `components/artifact.tsx` and `hooks/use-artifact.ts`
+2. **Custom Hooks**: See `hooks/` directory
+3. **Version Control**: See `components/version-footer.tsx` and `components/artifact-actions.tsx`
+4. **Artifact Types**: See implementations in `artifacts/` directory
+5. **Responsive Design**: See mobile adaptations in `components/artifact.tsx`
+6. **Debounced Operations**: See content saving in `components/artifact.tsx`
+
+## Best Practice Code Examples
+
+Include these examples when asking for specific implementations:
+
+### SWR for Data Fetching
+
+```tsx
+const { data: documents, mutate } = useSWR<Array<Document>>(
+  `/api/document?id=${documentId}`,
+  fetcher,
+);
+```
+
+### Custom Hook Implementation
+
+```tsx
+export function useArtifactSelector<Selected>(selector: Selector<Selected>) {
+  const { data: localArtifact } = useSWR<UIArtifact>('artifact', null, {
+    fallbackData: initialArtifactData,
+  });
+
+  const selectedValue = useMemo(() => {
+    if (!localArtifact) return selector(initialArtifactData);
+    return selector(localArtifact);
+  }, [localArtifact, selector]);
+
+  return selectedValue;
+}
+```
+
+### Debounced Content Saving
+
+```tsx
+const debouncedHandleContentChange = useDebounceCallback(
+  handleContentChange,
+  1000, // 1 second debounce time
+);
+
+const saveContent = (updatedContent: string, debounce: boolean) => {
+  setIsContentDirty(true); // Show saving indicator
+
+  if (debounce) {
+    debouncedHandleContentChange(updatedContent);
+  } else {
+    handleContentChange(updatedContent);
+  }
+};
+```
