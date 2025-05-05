@@ -39,9 +39,9 @@ import {
 } from '@/components/ui/sidebar';
 import { ChatItem } from './sidebar-history-item';
 import {
-  mockApiService,
+  apiService,
   type ChatSummary,
-} from '@/lib/services/mock-api-service';
+} from '@/lib/services/api-service';
 
 /**
  * Structure for grouping chats by date categories
@@ -124,14 +124,18 @@ export function SidebarHistory() {
   const [chatHistory, setChatHistory] = useState<ChatSummary[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
 
-  // Fetch chat history from mock API on initial load
+  // Fetch chat history from API on initial load
   useEffect(() => {
     const fetchChatHistory = async () => {
       try {
         setIsLoading(true);
-        const chats = await mockApiService.getChatHistory(PAGE_SIZE);
+        const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
         setChatHistory(chats);
+        setHasMore(chats.length === PAGE_SIZE);
+        setOffset(PAGE_SIZE);
       } catch (error) {
         console.error('Error fetching chat history:', error);
       } finally {
@@ -141,6 +145,26 @@ export function SidebarHistory() {
 
     fetchChatHistory();
   }, []);
+  
+  const loadMoreChats = async () => {
+    if (!hasMore || isLoading) return;
+    
+    try {
+      setIsLoading(true);
+      const moreChats = await apiService.getChatHistory(PAGE_SIZE, offset);
+      if (moreChats.length === 0) {
+        setHasMore(false);
+      } else {
+        setChatHistory((prevChats) => [...prevChats, ...moreChats]);
+        setOffset((prevOffset) => prevOffset + moreChats.length);
+        setHasMore(moreChats.length === PAGE_SIZE);
+      }
+    } catch (error) {
+      console.error('Error fetching more chat history:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    * Handles chat deletion with toast notification feedback
@@ -148,16 +172,32 @@ export function SidebarHistory() {
    * Redirects to home page if current chat is deleted
    */
   const handleDelete = async () => {
+    if (!deleteId) return;
+    
     toast.promise(
-      new Promise((resolve) => {
-        setTimeout(() => {
-          // Remove from local state
+      (async () => {
+        try {
+          // Optimistically update UI
           setChatHistory((prevChats) =>
             prevChats.filter((chat) => chat.id !== deleteId),
           );
-          resolve('Chat deleted successfully');
-        }, 500);
-      }),
+          
+          const response = await fetch(`/conversations/${deleteId}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to delete chat: ${response.statusText}`);
+          }
+          
+          return 'Chat deleted successfully';
+        } catch (error) {
+          console.error('Error deleting chat:', error);
+          const chats = await apiService.getChatHistory(PAGE_SIZE, 0);
+          setChatHistory(chats);
+          throw error;
+        }
+      })(),
       {
         loading: 'Deleting chat...',
         success: 'Chat deleted successfully',
@@ -231,7 +271,20 @@ export function SidebarHistory() {
               const groupedChats = groupChatsByDate(chatHistory);
 
               return (
-                <div className="flex flex-col gap-6">
+                <div 
+                  className="flex flex-col gap-6"
+                  onScroll={(e) => {
+                    const target = e.target as HTMLDivElement;
+                    if (
+                      target.scrollHeight - target.scrollTop <= target.clientHeight + 100 &&
+                      hasMore &&
+                      !isLoading
+                    ) {
+                      loadMoreChats();
+                    }
+                  }}
+                  style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
+                >
                   {/* Today's chats section */}
                   {groupedChats.today.length > 0 && (
                     <div>
@@ -334,6 +387,13 @@ export function SidebarHistory() {
                           setOpenMobile={setOpenMobile}
                         />
                       ))}
+                    </div>
+                  )}
+                  
+                  {/* Loading indicator for pagination */}
+                  {isLoading && hasMore && (
+                    <div className="flex justify-center py-4">
+                      <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-sidebar-foreground"></div>
                     </div>
                   )}
                 </div>

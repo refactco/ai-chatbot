@@ -82,6 +82,17 @@ export interface ChatSummary {
   lastMessagePreview: string;
   createdAt: Date;
   updatedAt: Date;
+  conversation_id?: string; // From IConversationMessage
+  message_id?: string; // From IConversationMessage
+  parent_message_id?: string | null; // From IConversationMessage
+  user_id?: string; // From IConversationMessage
+  role?: string; // From IConversationMessage
+  content?: any; // From IConversationMessage
+  timestamp?: Date; // From IConversationMessage
+  metadata?: any; // From IConversationMessage
+  tool_calls?: any | null; // From IConversationMessage
+  path?: string[]; // From IConversationMessage
+  schema_version?: number; // From IConversationMessage
 }
 
 export interface StreamResponseOptions {
@@ -569,7 +580,7 @@ export const apiService = {
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`/api/chats?limit=${limit}&offset=${offset}`);
+    const response = await fetch(`/conversations?limit=${limit}&offset=${offset}`);
 
     if (!response.ok) {
       throw new Error(`Error fetching chat history: ${response.statusText}`);
