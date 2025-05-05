@@ -75,8 +75,6 @@ const PurePreviewMessage = ({
         ? 'assistant'
         : message.role);
 
-  console.log({ previewMessage: message });
-
   return (
     <AnimatePresence>
       <motion.div

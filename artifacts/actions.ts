@@ -35,9 +35,9 @@ export interface Suggestion {
  */
 export async function getSuggestions({
   documentId,
-}: { documentId: string }): Promise<Suggestion[]> {
-  console.log(`[Mock API] Fetching suggestions for document: ${documentId}`);
-
+}: {
+  documentId: string;
+}): Promise<Suggestion[]> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 100));
 

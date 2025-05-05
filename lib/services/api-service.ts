@@ -72,8 +72,10 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'tool';
   createdAt: Date;
   attachments?: Attachment[];
+  conversationId?: string;
   // reasoning?: string;
   // type?: string;
+  tool_calls?: any;
 }
 
 export interface ChatSummary {
@@ -88,6 +90,7 @@ export interface ChatSummary {
 }
 
 export interface StreamResponseOptions {
+  onStart: (conversationId: string) => void;
   onChunk: (chunk: string | ChatMessage) => void;
   onFinish: (message: ChatMessage) => void;
   onError: (error: Error) => void;
@@ -431,25 +434,26 @@ export const apiService = {
     options: StreamResponseOptions,
     chatId?: string,
     attachments: Attachment[] = [],
+    conversationId?: string,
   ): Promise<void> => {
-    const { onChunk, onFinish, onError } = options;
+    const { onStart, onChunk, onFinish, onError } = options;
 
     try {
       // Encode the message for the query parameter
       const encodedMessage = encodeURIComponent(message);
 
-      console.log(
-        'Starting chat stream request:',
-        encodedMessage.substring(0, 30) + '...',
-      );
+      // Build the URL, adding conversationId if it exists
+      let streamUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}&token=${API_CONFIG.AUTH_TOKEN}`;
+
+      // Add conversationId to URL if present (for follow-up messages)
+      if (conversationId) {
+        streamUrl += `&conversationId=${conversationId}`;
+      }
 
       // Connect to the backend API endpoint for streaming with token
-      const eventSource = new EventSource(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHAT_STREAM}?message=${encodedMessage}&token=${API_CONFIG.AUTH_TOKEN}`,
-        {
-          withCredentials: false, // Add this to handle CORS
-        },
-      );
+      const eventSource = new EventSource(streamUrl, {
+        withCredentials: false, // Add this to handle CORS
+      });
 
       // Track seen event types for debugging
       const seenEventTypes = new Set<string>();
@@ -463,25 +467,30 @@ export const apiService = {
       // Store all streaming chunks
       let responseContent = '';
 
+      // Store conversation ID from response if available
+      let receivedConversationId: string | undefined = undefined;
+
+      eventSource.addEventListener('start', (event) => {
+        const parsedData = JSON.parse(event.data);
+        // Ensure we have a complete final response
+        onStart(parsedData.conversationId);
+      });
+
       // Process events from the stream
       eventSource.addEventListener('message', (event) => {
         try {
           // Parse the event data
           const parsedData = JSON.parse(event.data);
 
-          // Log for debugging real API responses
-          console.log('Real API event data:', {
-            event: event,
-            parsedData: parsedData,
-            role: parsedData.role,
-            content: parsedData.content,
-            toolCalls: parsedData.tool_calls,
-          });
-
           const eventType = parsedData.role;
 
           // Track event types seen
           seenEventTypes.add(eventType);
+
+          // Check if we have a conversation_id in the response
+          if (parsedData.conversation_id && !receivedConversationId) {
+            receivedConversationId = parsedData.conversation_id;
+          }
 
           if (eventType === 'user' && !parsedData.content) {
             return;
@@ -525,6 +534,8 @@ export const apiService = {
             content: formatEventContent(parsedData),
             tool_calls: parsedData.tool_calls,
             createdAt: new Date(),
+            conversation_id:
+              parsedData.conversation_id || receivedConversationId,
           };
 
           onChunk(eventMessage);
@@ -535,7 +546,6 @@ export const apiService = {
 
       // Handle stream completion
       eventSource.addEventListener('end', () => {
-        console.log('Stream completed. Event types seen:', [...seenEventTypes]);
         eventSource.close();
 
         // Ensure we have a complete final response
@@ -545,6 +555,7 @@ export const apiService = {
             role: 'assistant' as const,
             content: responseContent,
             createdAt: new Date(),
+            conversation_id: receivedConversationId,
           };
           onFinish(finalMessage);
         } else {
@@ -554,6 +565,7 @@ export const apiService = {
             role: 'assistant' as const,
             content: 'Processing complete.',
             createdAt: new Date(),
+            conversation_id: receivedConversationId,
           });
         }
       });
@@ -572,23 +584,28 @@ export const apiService = {
 
   // Get chat history
   getChatHistory: async (limit = 20, offset = 0): Promise<ChatSummary[]> => {
-    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/conversations?limit=${limit}&offset=${offset}&token=${API_CONFIG.AUTH_TOKEN}`);
+    const response = await fetch(
+      `${API_CONFIG.BACKEND_URL}/api/conversations?limit=${limit}&offset=${offset}&token=${API_CONFIG.AUTH_TOKEN}`,
+    );
 
     if (!response.ok) {
       throw new Error(`Error fetching chat history: ${response.statusText}`);
     }
 
     const conversations = await response.json();
-    
+
     // Transform the response data to match our expected structure
     return conversations.map((conversation: any) => {
-      const contentStr = typeof conversation.content === 'string' 
-        ? conversation.content 
-        : JSON.stringify(conversation.content);
-      
-      const title = contentStr.substring(0, 30) + (contentStr.length > 30 ? '...' : '');
-      const lastMessagePreview = contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : '');
-      
+      const contentStr =
+        typeof conversation.content === 'string'
+          ? conversation.content
+          : JSON.stringify(conversation.content);
+
+      const title =
+        contentStr.substring(0, 30) + (contentStr.length > 30 ? '...' : '');
+      const lastMessagePreview =
+        contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : '');
+
       return {
         id: conversation._id || conversation.conversation_id,
         title,
@@ -597,7 +614,7 @@ export const apiService = {
         content: conversation.content,
         conversation_id: conversation.conversation_id,
         message_id: conversation.message_id,
-        _id: conversation._id
+        _id: conversation._id,
       };
     });
   },
@@ -621,10 +638,13 @@ export const apiService = {
 
   // Create a new empty chat
   createNewChat: async (): Promise<ChatSummary> => {
-    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/chat?token=${API_CONFIG.AUTH_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const response = await fetch(
+      `${API_CONFIG.BACKEND_URL}/api/chat?token=${API_CONFIG.AUTH_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     if (!response.ok) {
       throw new Error(`Error creating chat: ${response.statusText}`);
@@ -632,21 +652,25 @@ export const apiService = {
 
     // Get the new chat data
     const newChat = await response.json();
-    
+
     // Return the transformed chat data to match our expected structure
     return {
       id: newChat._id || newChat.conversation_id,
-      title: typeof newChat.content === 'string' 
-        ? newChat.content.substring(0, 30) + (newChat.content.length > 30 ? '...' : '')
-        : 'New Conversation',
-      lastMessagePreview: typeof newChat.content === 'string'
-        ? newChat.content.substring(0, 50) + (newChat.content.length > 50 ? '...' : '')
-        : '',
+      title:
+        typeof newChat.content === 'string'
+          ? newChat.content.substring(0, 30) +
+            (newChat.content.length > 30 ? '...' : '')
+          : 'New Conversation',
+      lastMessagePreview:
+        typeof newChat.content === 'string'
+          ? newChat.content.substring(0, 50) +
+            (newChat.content.length > 50 ? '...' : '')
+          : '',
       timestamp: newChat.timestamp,
       content: newChat.content,
       conversation_id: newChat.conversation_id,
       message_id: newChat.message_id,
-      _id: newChat._id
+      _id: newChat._id,
     };
   },
 };

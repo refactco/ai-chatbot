@@ -67,6 +67,7 @@ export interface UIMessage extends Message {
   // role?: 'user' | 'assistant' | 'tool'; // Event type for stream events
   // human_in_the_loop?: HumanInTheLoop; // Human interaction data
   tool_calls?: ToolResult; // Tool execution results
+  conversationId?: string; // Conversation ID to track related messages
 }
 
 /**

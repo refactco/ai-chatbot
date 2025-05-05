@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     // Extract the message from the query parameters
     const { searchParams } = new URL(request.url);
     const message = searchParams.get('message');
+    const conversation_id = searchParams.get('conversationId');
 
     if (!message) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -32,9 +33,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Construct the real API URL
-    const apiUrl = `${REAL_API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${REAL_API_TOKEN}`;
+    let apiUrl = `${REAL_API_BASE_URL}/api/chat/stream?message=${encodeURIComponent(message)}&token=${REAL_API_TOKEN}`;
 
-    console.log('Proxying request to real API:', apiUrl);
+    // Add conversation_id if available
+    if (conversation_id) {
+      apiUrl += `&conversationId=${conversation_id}`;
+    }
 
     // Forward the request to the real API
     const apiResponse = await fetch(apiUrl, {
