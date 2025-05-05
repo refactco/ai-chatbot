@@ -621,7 +621,7 @@ export const apiService = {
 
   // Create a new empty chat
   createNewChat: async (): Promise<ChatSummary> => {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/chat?token=${API_CONFIG.AUTH_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -630,7 +630,24 @@ export const apiService = {
       throw new Error(`Error creating chat: ${response.statusText}`);
     }
 
-    return await response.json();
+    // Get the new chat data
+    const newChat = await response.json();
+    
+    // Return the transformed chat data to match our expected structure
+    return {
+      id: newChat._id || newChat.conversation_id,
+      title: typeof newChat.content === 'string' 
+        ? newChat.content.substring(0, 30) + (newChat.content.length > 30 ? '...' : '')
+        : 'New Conversation',
+      lastMessagePreview: typeof newChat.content === 'string'
+        ? newChat.content.substring(0, 50) + (newChat.content.length > 50 ? '...' : '')
+        : '',
+      timestamp: newChat.timestamp,
+      content: newChat.content,
+      conversation_id: newChat.conversation_id,
+      message_id: newChat.message_id,
+      _id: newChat._id
+    };
   },
 };
 
